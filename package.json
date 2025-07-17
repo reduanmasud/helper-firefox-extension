@@ -1,0 +1,24 @@
+{
+  "name": "console-script-manager",
+  "version": "1.0.0",
+  "description": "Firefox extension to create, manage and run JavaScript scripts in the browser console",
+  "main": "background/background.js",
+  "scripts": {
+    "build": "web-ext build --source-dir=. --artifacts-dir=./dist --overwrite-dest",
+    "lint": "web-ext lint --source-dir=.",
+    "start": "web-ext run --source-dir=."
+  },
+  "keywords": [
+    "firefox-extension",
+    "javascript",
+    "console",
+    "script-manager",
+    "xpath",
+    "element-selector"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "web-ext": "^7.6.2"
+  }
+}

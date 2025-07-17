@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Element Inspector</title>
+  <link rel="stylesheet" href="sidebar.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Element Inspector</h1>
+    </header>
+
+    <main>
+      <div class="inspector-section">
+        <h2>Element Selection</h2>
+        <div class="selection-controls">
+          <button id="start-selection-btn" class="primary-btn">Select Element</button>
+          <button id="cancel-selection-btn" class="secondary-btn hidden">Cancel Selection</button>
+        </div>
+        
+        <div class="selected-element-info">
+          <h3>Selected Element</h3>
+          <div id="element-info" class="info-panel">
+            <div class="empty-state">No element selected. Click "Select Element" to begin.</div>
+          </div>
+        </div>
+
+        <div class="xpath-section">
+          <h3>XPath</h3>
+          <div class="xpath-display">
+            <input type="text" id="xpath-value" readonly>
+            <button id="copy-xpath-btn" class="text-btn">Copy</button>
+          </div>
+        </div>
+
+        <div class="actions-section">
+          <h3>Actions</h3>
+          <button id="insert-xpath-btn" class="primary-btn" disabled>Insert into Script</button>
+          <button id="test-xpath-btn" class="secondary-btn" disabled>Test XPath</button>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="status" id="status-message"></div>
+    </footer>
+  </div>
+
+  <script src="sidebar.js"></script>
+</body>
+</html>

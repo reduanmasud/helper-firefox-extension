@@ -1,0 +1,36 @@
+{
+  "manifest_version": 2,
+  "name": "Console Script Manager",
+  "version": "1.0",
+  "description": "Create, manage and run JavaScript scripts in the browser console with element selection and variable management",
+  "icons": {
+    "48": "icons/icon-48.svg",
+    "96": "icons/icon-96.svg"
+  },
+  "permissions": [
+    "activeTab",
+    "storage",
+    "tabs",
+    "<all_urls>"
+  ],
+  "browser_action": {
+    "default_icon": "icons/icon-48.svg",
+    "default_title": "Console Script Manager",
+    "default_popup": "popup/popup.html"
+  },
+  "sidebar_action": {
+    "default_icon": "icons/icon-48.svg",
+    "default_title": "Element Inspector",
+    "default_panel": "sidebar/sidebar.html",
+    "open_at_install": false
+  },
+  "background": {
+    "scripts": ["background/background.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/content.js"]
+    }
+  ]
+}

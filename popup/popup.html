@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Console Script Manager</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Console Script Manager</h1>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="scripts">Scripts</button>
+        <button class="tab-btn" data-tab="variables">Variables</button>
+        <button class="tab-btn" data-tab="results">Results</button>
+      </div>
+    </header>
+
+    <main>
+      <!-- Scripts Tab -->
+      <div class="tab-content active" id="scripts-tab">
+        <div class="scripts-header">
+          <h2>My Scripts</h2>
+          <button id="new-script-btn" class="primary-btn">New Script</button>
+        </div>
+        
+        <div class="scripts-list" id="scripts-list">
+          <!-- Scripts will be populated here -->
+          <div class="empty-state">No scripts yet. Create one to get started!</div>
+        </div>
+
+        <div class="script-editor hidden" id="script-editor">
+          <div class="editor-header">
+            <input type="text" id="script-name" placeholder="Script Name" class="script-name-input">
+            <div class="editor-actions">
+              <button id="select-element-btn" class="secondary-btn">Select Element</button>
+              <button id="save-script-btn" class="primary-btn">Save</button>
+              <button id="cancel-script-btn" class="text-btn">Cancel</button>
+            </div>
+          </div>
+          <textarea id="script-code" class="code-editor" placeholder="// Write your JavaScript code here"></textarea>
+        </div>
+
+        <div class="script-actions hidden" id="script-actions">
+          <button id="run-script-btn" class="primary-btn">Run Script</button>
+          <button id="edit-script-btn" class="secondary-btn">Edit</button>
+          <button id="delete-script-btn" class="danger-btn">Delete</button>
+        </div>
+      </div>
+
+      <!-- Variables Tab -->
+      <div class="tab-content" id="variables-tab">
+        <div class="variables-header">
+          <h2>Variables</h2>
+          <button id="new-variable-btn" class="primary-btn">New Variable</button>
+        </div>
+        
+        <div class="variables-list" id="variables-list">
+          <!-- Variables will be populated here -->
+          <div class="empty-state">No variables yet. Create one to use in your scripts!</div>
+        </div>
+
+        <div class="variable-editor hidden" id="variable-editor">
+          <div class="editor-header">
+            <input type="text" id="variable-name" placeholder="Variable Name" class="variable-name-input">
+            <div class="editor-actions">
+              <button id="save-variable-btn" class="primary-btn">Save</button>
+              <button id="cancel-variable-btn" class="text-btn">Cancel</button>
+            </div>
+          </div>
+          <input type="text" id="variable-value" placeholder="Variable Value" class="variable-value-input">
+        </div>
+      </div>
+
+      <!-- Results Tab -->
+      <div class="tab-content" id="results-tab">
+        <h2>Execution Results</h2>
+        <div class="results-container" id="results-container">
+          <!-- Results will be populated here -->
+          <div class="empty-state">No results yet. Run a script to see output here!</div>
+        </div>
+        <button id="clear-results-btn" class="secondary-btn">Clear Results</button>
+      </div>
+    </main>
+
+    <footer>
+      <div class="status" id="status-message"></div>
+    </footer>
+  </div>
+
+  <div class="element-selector-overlay hidden" id="element-selector-overlay">
+    <div class="selector-instructions">
+      <p>Click on any element in the page to select it</p>
+      <button id="cancel-selection-btn" class="secondary-btn">Cancel</button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
