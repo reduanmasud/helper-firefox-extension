@@ -3,42 +3,254 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Element Inspector</title>
+  <title>Console Script Manager</title>
   <link rel="stylesheet" href="sidebar.css">
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>Element Inspector</h1>
+      <h1>Console Script Manager</h1>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="scripts">Scripts</button>
+        <button class="tab-btn" data-tab="variables">Variables</button>
+        <button class="tab-btn" data-tab="test-suites">Test Suites</button>
+        <button class="tab-btn" data-tab="results">Results</button>
+        <button class="tab-btn" data-tab="inspector">Inspector</button>
+      </div>
     </header>
 
     <main>
-      <div class="inspector-section">
-        <h2>Element Selection</h2>
-        <div class="selection-controls">
-          <button id="start-selection-btn" class="primary-btn">Select Element</button>
-          <button id="cancel-selection-btn" class="secondary-btn hidden">Cancel Selection</button>
+      <!-- Scripts Tab -->
+      <div class="tab-content active" id="scripts-tab">
+        <div class="scripts-header">
+          <h2>My Scripts</h2>
+          <button id="new-script-btn" class="primary-btn">New Script</button>
         </div>
-        
-        <div class="selected-element-info">
-          <h3>Selected Element</h3>
-          <div id="element-info" class="info-panel">
-            <div class="empty-state">No element selected. Click "Select Element" to begin.</div>
+
+        <div class="scripts-list" id="scripts-list">
+          <!-- Scripts will be populated here -->
+          <div class="empty-state">No scripts yet. Create one to get started!</div>
+        </div>
+
+        <div class="script-editor hidden" id="script-editor">
+          <div class="editor-header">
+            <input type="text" id="script-name" placeholder="Script Name" class="script-name-input">
+            <div class="editor-actions">
+              <button id="select-element-btn" class="secondary-btn">Select Element</button>
+              <button id="save-script-btn" class="primary-btn">Save</button>
+              <button id="cancel-script-btn" class="text-btn">Cancel</button>
+            </div>
+          </div>
+          <textarea id="script-code" class="code-editor" placeholder="// Write your JavaScript code here"></textarea>
+        </div>
+
+        <div class="script-actions hidden" id="script-actions">
+          <button id="run-script-btn" class="primary-btn">Run Script</button>
+          <button id="edit-script-btn" class="secondary-btn">Edit</button>
+          <button id="delete-script-btn" class="danger-btn">Delete</button>
+        </div>
+      </div>
+
+      <!-- Variables Tab -->
+      <div class="tab-content" id="variables-tab">
+        <div class="variables-header">
+          <h2>Variables</h2>
+          <button id="new-variable-btn" class="primary-btn">New Variable</button>
+        </div>
+
+        <div class="variables-list" id="variables-list">
+          <!-- Variables will be populated here -->
+          <div class="empty-state">No variables yet. Create one to use in your scripts!</div>
+        </div>
+
+        <div class="variable-editor hidden" id="variable-editor">
+          <div class="editor-header">
+            <input type="text" id="variable-name" placeholder="Variable Name" class="variable-name-input">
+            <div class="editor-actions">
+              <button id="save-variable-btn" class="primary-btn">Save</button>
+              <button id="cancel-variable-btn" class="text-btn">Cancel</button>
+            </div>
+          </div>
+          <input type="text" id="variable-value" placeholder="Variable Value" class="variable-value-input">
+        </div>
+      </div>
+
+      <!-- Test Suites Tab -->
+      <div class="tab-content" id="test-suites-tab">
+        <div class="test-suites-header">
+          <h2>Test Suites</h2>
+          <button id="new-test-suite-btn" class="primary-btn">New Suite</button>
+        </div>
+
+        <div class="test-suites-list" id="test-suites-list">
+          <!-- Test suites will be populated here -->
+          <div class="empty-state">No test suites yet. Create one to organize your tests!</div>
+        </div>
+
+        <!-- Test Suite Editor (Simplified for sidebar) -->
+        <div class="test-suite-editor hidden" id="test-suite-editor">
+          <div class="editor-header">
+            <input type="text" id="test-suite-name" placeholder="Suite Name" class="test-suite-name-input">
+            <div class="editor-actions">
+              <button id="save-test-suite-btn" class="primary-btn">Save</button>
+              <button id="cancel-test-suite-btn" class="text-btn">Cancel</button>
+            </div>
+          </div>
+
+          <div class="test-suite-form">
+            <div class="form-group">
+              <label for="test-suite-description">Description:</label>
+              <textarea id="test-suite-description" placeholder="Optional description" class="test-suite-description-input"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="test-suite-tags">Tags:</label>
+              <input type="text" id="test-suite-tags" placeholder="ui, smoke, regression" class="test-suite-tags-input">
+            </div>
+
+            <div class="form-group">
+              <label>Setup Script:</label>
+              <div class="script-selector">
+                <select id="setup-script-select" class="script-select">
+                  <option value="">Select setup script (optional)</option>
+                </select>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="setup-script-enabled"> Enabled
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Teardown Script:</label>
+              <div class="script-selector">
+                <select id="teardown-script-select" class="script-select">
+                  <option value="">Select teardown script (optional)</option>
+                </select>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="teardown-script-enabled"> Enabled
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Configuration:</label>
+              <div class="configuration-options">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="stop-on-failure" checked> Stop on first failure
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="run-parallel"> Run test cases in parallel
+                </label>
+                <div class="number-inputs">
+                  <label>Timeout: <input type="number" id="default-timeout" value="30" min="1" max="300"> seconds</label>
+                  <label>Retry: <input type="number" id="default-retry" value="1" min="0" max="5"></label>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Test Cases:</label>
+              <div class="test-cases-header">
+                <button id="add-test-case-btn" class="secondary-btn">Add Test Case</button>
+              </div>
+              <div class="test-cases-list" id="test-cases-list">
+                <!-- Test cases will be populated here -->
+                <div class="empty-state">No test cases yet. Add one to get started!</div>
+              </div>
+
+              <!-- Test Case Editor (Simplified for sidebar) -->
+              <div class="test-case-editor hidden" id="test-case-editor">
+                <div class="editor-header">
+                  <h4 id="test-case-editor-title">Add Test Case</h4>
+                  <div class="editor-actions">
+                    <button id="save-test-case-btn" class="primary-btn">Save</button>
+                    <button id="cancel-test-case-btn" class="text-btn">Cancel</button>
+                  </div>
+                </div>
+
+                <div class="test-case-form">
+                  <div class="form-group">
+                    <label for="test-case-name">Name:</label>
+                    <input type="text" id="test-case-name" placeholder="Test case name" class="test-case-input">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="test-case-script">Script:</label>
+                    <select id="test-case-script" class="test-case-select">
+                      <option value="">Select a script</option>
+                    </select>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-col">
+                      <label for="test-case-timeout">Timeout (s):</label>
+                      <input type="number" id="test-case-timeout" min="1" max="300" placeholder="Default" class="test-case-input">
+                    </div>
+                    <div class="form-col">
+                      <label for="test-case-retry">Retry:</label>
+                      <input type="number" id="test-case-retry" min="0" max="5" placeholder="Default" class="test-case-input">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label>
+                      <input type="checkbox" id="test-case-enabled" checked> Enabled
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="xpath-section">
-          <h3>XPath</h3>
-          <div class="xpath-display">
-            <input type="text" id="xpath-value" readonly>
-            <button id="copy-xpath-btn" class="text-btn">Copy</button>
-          </div>
+        <!-- Test Suite Actions -->
+        <div class="test-suite-actions hidden" id="test-suite-actions">
+          <button id="run-test-suite-btn" class="primary-btn">Run Suite</button>
+          <button id="edit-test-suite-btn" class="secondary-btn">Edit</button>
+          <button id="duplicate-test-suite-btn" class="secondary-btn">Duplicate</button>
+          <button id="delete-test-suite-btn" class="danger-btn">Delete</button>
         </div>
+      </div>
 
-        <div class="actions-section">
-          <h3>Actions</h3>
-          <button id="insert-xpath-btn" class="primary-btn" disabled>Insert into Script</button>
-          <button id="test-xpath-btn" class="secondary-btn" disabled>Test XPath</button>
+      <!-- Results Tab -->
+      <div class="tab-content" id="results-tab">
+        <h2>Execution Results</h2>
+        <div class="results-container" id="results-container">
+          <!-- Results will be populated here -->
+          <div class="empty-state">No results yet. Run a script to see output here!</div>
+        </div>
+        <button id="clear-results-btn" class="secondary-btn">Clear Results</button>
+      </div>
+
+      <!-- Inspector Tab (Original Element Selection) -->
+      <div class="tab-content" id="inspector-tab">
+        <div class="inspector-section">
+          <h2>Element Selection</h2>
+          <div class="selection-controls">
+            <button id="start-selection-btn" class="primary-btn">Select Element</button>
+            <button id="cancel-selection-btn" class="secondary-btn hidden">Cancel Selection</button>
+          </div>
+
+          <div class="selected-element-info">
+            <h3>Selected Element</h3>
+            <div id="element-info" class="info-panel">
+              <div class="empty-state">No element selected. Click "Select Element" to begin.</div>
+            </div>
+          </div>
+
+          <div class="xpath-section">
+            <h3>XPath</h3>
+            <div class="xpath-display">
+              <input type="text" id="xpath-value" readonly>
+              <button id="copy-xpath-btn" class="text-btn">Copy</button>
+            </div>
+          </div>
+
+          <div class="actions-section">
+            <h3>Actions</h3>
+            <button id="insert-xpath-btn" class="primary-btn" disabled>Insert into Script</button>
+            <button id="test-xpath-btn" class="secondary-btn" disabled>Test XPath</button>
+          </div>
         </div>
       </div>
     </main>

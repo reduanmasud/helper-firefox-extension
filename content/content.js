@@ -296,6 +296,11 @@ function testXPath(xpath) {
 // Execute script in page context
 function executeScript(code) {
   try {
+    // First inject the assertion library if not already present
+    if (!window.assert) {
+      injectAssertionLibrary();
+    }
+
     // Execute the code directly in a safer way using a script tag
     const script = document.createElement('script');
     script.textContent = code;
@@ -349,16 +354,70 @@ function executeScript(code) {
       originalConsoleInfo.apply(console, arguments);
     };
     
+    // Clear previous assertion results if assertion library is available
+    try {
+      if (window.assert && window.assert.clearResults) {
+        window.assert.clearResults();
+      }
+    } catch (clearError) {
+      console.warn('Error clearing assertion results:', clearError);
+    }
+
     // Execute the script and capture its return value
-    document.head.appendChild(script);
-    document.head.removeChild(script);
-    
+    let result;
+    try {
+      // Wrap the user code to capture return value
+      const wrappedCode = `
+        (function() {
+          ${code}
+        })();
+      `;
+      script.textContent = wrappedCode;
+
+      // Create a global variable to capture the result
+      window.__scriptResult = undefined;
+
+      // Modify the script to capture return values
+      const resultCaptureCode = `
+        try {
+          window.__scriptResult = (function() {
+            ${code}
+          })();
+        } catch (e) {
+          window.__scriptError = e;
+          throw e;
+        }
+      `;
+      script.textContent = resultCaptureCode;
+
+      document.head.appendChild(script);
+      document.head.removeChild(script);
+
+      // Get the captured result
+      result = window.__scriptResult;
+
+      // Check for captured errors
+      if (window.__scriptError) {
+        throw window.__scriptError;
+      }
+
+      // Clean up global variables
+      delete window.__scriptResult;
+      delete window.__scriptError;
+
+    } catch (scriptError) {
+      // Clean up global variables on error
+      delete window.__scriptResult;
+      delete window.__scriptError;
+      throw scriptError;
+    }
+
     // Restore original console methods
     console.log = originalConsoleLog;
     console.error = originalConsoleError;
     console.warn = originalConsoleWarn;
     console.info = originalConsoleInfo;
-    
+
     // Add the return value to the output if it exists and isn't undefined
     if (result !== undefined) {
       if (typeof result === 'object') {
@@ -368,9 +427,239 @@ function executeScript(code) {
       }
     }
     
-    return output || 'Script executed successfully (no output)';
+    // Capture assertion results if available
+    let assertionSummary = null;
+    try {
+      if (window.assert && window.assert.getSummary) {
+        assertionSummary = window.assert.getSummary();
+        if (assertionSummary.total > 0) {
+          output += `\nAssertions: ${assertionSummary.passed}/${assertionSummary.total} passed`;
+          if (assertionSummary.failed > 0) {
+            output += ` (${assertionSummary.failed} failed)`;
+          }
+        }
+      }
+    } catch (assertError) {
+      console.warn('Error getting assertion results:', assertError);
+    }
+
+    // Determine success based on assertions and errors
+    const success = assertionSummary ?
+      (assertionSummary.failed === 0) :
+      !output.includes('ERROR:');
+
+    return {
+      success,
+      output: output || 'Script executed successfully (no output)',
+      assertions: assertionSummary
+    };
   } catch (error) {
     console.error('Script execution error:', error);
-    return `Error: ${error.message}`;
+    return {
+      success: false,
+      output: `Error: ${error.message}`,
+      assertions: null
+    };
   }
+}
+
+// Inject assertion library into page context
+function injectAssertionLibrary() {
+  // Check if assertion library is already injected
+  const existingScript = document.querySelector('script[data-assertion-library]');
+  if (existingScript) {
+    return; // Already injected
+  }
+
+  const assertionLibraryCode = `
+// Assertion Library for Console Script Manager
+class AssertionResult {
+  constructor(passed, message, expected = null, actual = null) {
+    this.passed = passed;
+    this.message = message;
+    this.expected = expected;
+    this.actual = actual;
+    this.timestamp = new Date().toISOString();
+  }
+
+  toString() {
+    if (this.passed) {
+      return \`✓ \${this.message}\`;
+    } else {
+      let result = \`✗ \${this.message}\`;
+      if (this.expected !== null && this.actual !== null) {
+        result += \`\\n  Expected: \${this.formatValue(this.expected)}\`;
+        result += \`\\n  Actual: \${this.formatValue(this.actual)}\`;
+      }
+      return result;
+    }
+  }
+
+  formatValue(value) {
+    if (value === null) return 'null';
+    if (value === undefined) return 'undefined';
+    if (typeof value === 'string') return \`"\${value}"\`;
+    if (typeof value === 'object') return JSON.stringify(value, null, 2);
+    return String(value);
+  }
+}
+
+class AssertionContext {
+  constructor() {
+    this.results = [];
+  }
+
+  addResult(result) {
+    this.results.push(result);
+
+    if (result.passed) {
+      console.log(\`%c\${result.toString()}\`, 'color: green; font-weight: bold;');
+    } else {
+      console.error(\`%c\${result.toString()}\`, 'color: red; font-weight: bold;');
+    }
+
+    return result;
+  }
+
+  getResults() {
+    return this.results;
+  }
+
+  getSummary() {
+    const passed = this.results.filter(r => r.passed).length;
+    const failed = this.results.filter(r => !r.passed).length;
+    const total = this.results.length;
+
+    return { total, passed, failed, passRate: total > 0 ? (passed / total) * 100 : 0 };
+  }
+
+  clear() {
+    this.results = [];
+  }
+}
+
+class AssertionLibrary {
+  constructor() {
+    this.context = new AssertionContext();
+  }
+
+  // Basic assertions
+  assertEquals(actual, expected, message = null) {
+    const defaultMessage = message || \`Expected \${this.formatValue(actual)} to equal \${this.formatValue(expected)}\`;
+    const passed = actual === expected;
+    const result = new AssertionResult(passed, defaultMessage, expected, actual);
+    return this.context.addResult(result);
+  }
+
+  assertNotEquals(actual, expected, message = null) {
+    const defaultMessage = message || \`Expected \${this.formatValue(actual)} to not equal \${this.formatValue(expected)}\`;
+    const passed = actual !== expected;
+    const result = new AssertionResult(passed, defaultMessage, \`not \${expected}\`, actual);
+    return this.context.addResult(result);
+  }
+
+  assertTrue(actual, message = null) {
+    const defaultMessage = message || \`Expected \${this.formatValue(actual)} to be true\`;
+    const passed = actual === true;
+    const result = new AssertionResult(passed, defaultMessage, true, actual);
+    return this.context.addResult(result);
+  }
+
+  assertFalse(actual, message = null) {
+    const defaultMessage = message || \`Expected \${this.formatValue(actual)} to be false\`;
+    const passed = actual === false;
+    const result = new AssertionResult(passed, defaultMessage, false, actual);
+    return this.context.addResult(result);
+  }
+
+  assertNull(actual, message = null) {
+    const defaultMessage = message || \`Expected \${this.formatValue(actual)} to be null\`;
+    const passed = actual === null;
+    const result = new AssertionResult(passed, defaultMessage, null, actual);
+    return this.context.addResult(result);
+  }
+
+  assertNotNull(actual, message = null) {
+    const defaultMessage = message || \`Expected \${this.formatValue(actual)} to not be null\`;
+    const passed = actual !== null;
+    const result = new AssertionResult(passed, defaultMessage, 'not null', actual);
+    return this.context.addResult(result);
+  }
+
+  assertContains(haystack, needle, message = null) {
+    const defaultMessage = message || \`Expected "\${haystack}" to contain "\${needle}"\`;
+    const passed = String(haystack).includes(String(needle));
+    const result = new AssertionResult(passed, defaultMessage, \`contains "\${needle}"\`, haystack);
+    return this.context.addResult(result);
+  }
+
+  // DOM assertions
+  assertElementExists(selector, message = null) {
+    const element = document.querySelector(selector);
+    const defaultMessage = message || \`Expected element "\${selector}" to exist\`;
+    const passed = element !== null;
+    const result = new AssertionResult(passed, defaultMessage, 'element exists', element ? 'found' : 'not found');
+    return this.context.addResult(result);
+  }
+
+  assertElementVisible(selector, message = null) {
+    const element = document.querySelector(selector);
+    const defaultMessage = message || \`Expected element "\${selector}" to be visible\`;
+
+    let passed = false;
+    if (element) {
+      const style = window.getComputedStyle(element);
+      passed = style.display !== 'none' &&
+               style.visibility !== 'hidden' &&
+               style.opacity !== '0' &&
+               element.offsetWidth > 0 &&
+               element.offsetHeight > 0;
+    }
+
+    const result = new AssertionResult(passed, defaultMessage, 'visible', passed ? 'visible' : 'not visible');
+    return this.context.addResult(result);
+  }
+
+  assertElementText(selector, expectedText, message = null) {
+    const element = document.querySelector(selector);
+    const actualText = element ? element.textContent.trim() : null;
+    const defaultMessage = message || \`Expected element "\${selector}" to have text "\${expectedText}"\`;
+    const passed = actualText === expectedText;
+    const result = new AssertionResult(passed, defaultMessage, expectedText, actualText);
+    return this.context.addResult(result);
+  }
+
+  // Utility methods
+  formatValue(value) {
+    if (value === null) return 'null';
+    if (value === undefined) return 'undefined';
+    if (typeof value === 'string') return \`"\${value}"\`;
+    if (typeof value === 'object') return JSON.stringify(value, null, 2);
+    return String(value);
+  }
+
+  getResults() {
+    return this.context.getResults();
+  }
+
+  getSummary() {
+    return this.context.getSummary();
+  }
+
+  clearResults() {
+    this.context.clear();
+  }
+}
+
+// Create global assertion instance
+if (!window.assert) {
+  window.assert = new AssertionLibrary();
+  console.log('%cAssertion library loaded successfully', 'color: blue; font-weight: bold;');
+}
+`;
+
+  const script = document.createElement('script');
+  script.setAttribute('data-assertion-library', 'true');
+  script.textContent = assertionLibraryCode;
+  document.head.appendChild(script);
 }

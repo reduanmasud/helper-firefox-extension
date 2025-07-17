@@ -1,15 +1,36 @@
 // Background script for Console Script Manager extension
 
 // Initialize extension when installed
-browser.runtime.onInstalled.addListener(() => {
+browser.runtime.onInstalled.addListener(async () => {
   console.log('Console Script Manager extension installed');
-  
+
   // Initialize storage with empty data
-  browser.storage.local.set({
+  await browser.storage.local.set({
     scripts: [],
     variables: [],
     results: []
   });
+
+  // Initialize test suite storage
+  try {
+    // Import test suite storage (we'll need to load it dynamically)
+    const { testSuiteStorage } = await import('../shared/test-suite-storage.js');
+    await testSuiteStorage.initialize();
+    console.log('Test suite storage initialized');
+  } catch (error) {
+    console.error('Failed to initialize test suite storage:', error);
+    // Fallback initialization
+    await browser.storage.local.set({
+      testSuites: [],
+      suiteResults: [],
+      testSuiteSettings: {
+        defaultTimeout: 30000,
+        maxResultHistory: 50,
+        autoScreenshot: false,
+        maxSuiteHistory: 10
+      }
+    });
+  }
 });
 
 // Listen for messages from popup or content scripts
@@ -78,7 +99,21 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }).catch(error => {
       console.log('Could not forward XPath to popup (might be closed)');
     });
-    
+
+    sendResponse({ success: true });
+    return true;
+  }
+
+  // Handle state synchronization requests
+  if (message.action === 'syncState') {
+    // Forward state sync request to both popup and sidebar
+    browser.runtime.sendMessage({
+      action: 'stateChanged',
+      data: message.data
+    }).catch(error => {
+      console.log('Could not sync state (popup/sidebar might be closed)');
+    });
+
     sendResponse({ success: true });
     return true;
   }
