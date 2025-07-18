@@ -663,3 +663,196 @@ if (!window.assert) {
   script.textContent = assertionLibraryCode;
   document.head.appendChild(script);
 }
+
+// Content Inspection Functions
+let isContentInspecting = false;
+let contentInspectionOverlay = null;
+
+function startContentInspection() {
+  if (isContentInspecting) return;
+
+  isContentInspecting = true;
+  createContentInspectionOverlay();
+
+  // Add event listeners for element inspection
+  document.addEventListener('mouseover', highlightElementForContent, true);
+  document.addEventListener('click', selectElementForContent, true);
+  document.addEventListener('keydown', handleContentInspectionKeydown, true);
+}
+
+function createContentInspectionOverlay() {
+  // Remove existing overlay if any
+  if (contentInspectionOverlay) {
+    contentInspectionOverlay.remove();
+  }
+
+  contentInspectionOverlay = document.createElement('div');
+  contentInspectionOverlay.style.cssText = `
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px;
+    border-radius: 4px;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    z-index: 999999;
+    pointer-events: none;
+  `;
+  contentInspectionOverlay.textContent = 'Click on any element to extract its content. Press ESC to cancel.';
+  document.body.appendChild(contentInspectionOverlay);
+}
+
+function highlightElementForContent(event) {
+  if (!isContentInspecting) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  // Remove previous highlights
+  const previousHighlight = document.querySelector('.content-inspection-highlight');
+  if (previousHighlight) {
+    previousHighlight.classList.remove('content-inspection-highlight');
+  }
+
+  // Add highlight to current element
+  event.target.classList.add('content-inspection-highlight');
+
+  // Add highlight styles if not already added
+  if (!document.querySelector('#content-inspection-styles')) {
+    const style = document.createElement('style');
+    style.id = 'content-inspection-styles';
+    style.textContent = `
+      .content-inspection-highlight {
+        outline: 2px solid #ff6b35 !important;
+        outline-offset: 2px !important;
+        background-color: rgba(255, 107, 53, 0.1) !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
+
+function selectElementForContent(event) {
+  if (!isContentInspecting) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  const element = event.target;
+
+  // Extract content from the element
+  let content = '';
+
+  // Try to get meaningful text content
+  if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+    content = element.value;
+  } else if (element.tagName === 'SELECT') {
+    content = element.options[element.selectedIndex]?.text || '';
+  } else {
+    // Get text content, but also include some HTML structure for complex elements
+    const textContent = element.textContent?.trim() || '';
+    const innerHTML = element.innerHTML?.trim() || '';
+
+    if (textContent.length > 0) {
+      content = textContent;
+
+      // If the element has significant HTML structure, include it
+      if (innerHTML.length > textContent.length * 1.5 && innerHTML.includes('<')) {
+        content += '\n\n--- HTML Structure ---\n' + innerHTML;
+      }
+    } else {
+      content = innerHTML;
+    }
+  }
+
+  // Clean up and send the content
+  stopContentInspection();
+
+  if (content.trim()) {
+    chrome.runtime.sendMessage({
+      action: 'contentExtracted',
+      content: content.trim()
+    });
+  } else {
+    chrome.runtime.sendMessage({
+      action: 'contentExtracted',
+      content: 'No content found in selected element'
+    });
+  }
+}
+
+function handleContentInspectionKeydown(event) {
+  if (!isContentInspecting) return;
+
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    event.stopPropagation();
+    stopContentInspection();
+    chrome.runtime.sendMessage({
+      action: 'contentInspectionCancelled'
+    });
+  }
+}
+
+function stopContentInspection() {
+  if (!isContentInspecting) return;
+
+  isContentInspecting = false;
+
+  // Remove event listeners
+  document.removeEventListener('mouseover', highlightElementForContent, true);
+  document.removeEventListener('click', selectElementForContent, true);
+  document.removeEventListener('keydown', handleContentInspectionKeydown, true);
+
+  // Remove overlay
+  if (contentInspectionOverlay) {
+    contentInspectionOverlay.remove();
+    contentInspectionOverlay = null;
+  }
+
+  // Remove highlights
+  const highlighted = document.querySelector('.content-inspection-highlight');
+  if (highlighted) {
+    highlighted.classList.remove('content-inspection-highlight');
+  }
+
+  // Remove styles
+  const styles = document.querySelector('#content-inspection-styles');
+  if (styles) {
+    styles.remove();
+  }
+}
+
+// Message listener for communication with popup/sidebar
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'executeScript') {
+    executeScript(message.code)
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({
+        success: false,
+        output: `Error: ${error.message}`,
+        assertions: null
+      }));
+    return true; // Keep message channel open for async response
+  }
+
+  if (message.action === 'startElementSelection') {
+    startElementSelection();
+    sendResponse({ success: true });
+  }
+
+  if (message.action === 'cancelElementSelection') {
+    cancelElementSelection();
+    sendResponse({ success: true });
+  }
+
+  if (message.action === 'startContentInspection') {
+    startContentInspection();
+    sendResponse({ success: true });
+  }
+});
+
+// Initialize assertion library when content script loads
+injectAssertionLibrary();

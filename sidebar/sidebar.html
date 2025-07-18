@@ -14,7 +14,9 @@
         <button class="tab-btn active" data-tab="scripts">Scripts</button>
         <button class="tab-btn" data-tab="variables">Variables</button>
         <button class="tab-btn" data-tab="test-suites">Test Suites</button>
+        <button class="tab-btn" data-tab="analyzer">Analyzer</button>
         <button class="tab-btn" data-tab="results">Results</button>
+        <button class="tab-btn" data-tab="settings">Settings</button>
         <button class="tab-btn" data-tab="inspector">Inspector</button>
       </div>
     </header>
@@ -220,6 +222,102 @@
           <div class="empty-state">No results yet. Run a script to see output here!</div>
         </div>
         <button id="clear-results-btn" class="secondary-btn">Clear Results</button>
+      </div>
+
+      <!-- Analyzer Tab -->
+      <div class="tab-content" id="analyzer-tab">
+        <h2>AI Content Analyzer</h2>
+
+        <div class="analyzer-section">
+          <h3>Element Inspection</h3>
+          <div class="inspection-controls">
+            <button id="inspect-element-btn" class="primary-btn">Inspect Element</button>
+            <button id="clear-content-btn" class="secondary-btn">Clear Content</button>
+          </div>
+
+          <div class="form-group">
+            <label for="extracted-content">Extracted Content:</label>
+            <textarea id="extracted-content" class="extracted-content" readonly placeholder="Click 'Inspect Element' and then click on any webpage element to extract its content..."></textarea>
+          </div>
+        </div>
+
+        <div class="analyzer-section">
+          <h3>AI Analysis</h3>
+          <div class="form-group">
+            <label for="analysis-prompt">Analysis Instructions:</label>
+            <textarea id="analysis-prompt" class="analysis-prompt" placeholder="Enter your analysis instructions here (e.g., 'Summarize this content', 'Extract key information', 'Analyze sentiment')..."></textarea>
+          </div>
+
+          <div class="analysis-controls">
+            <button id="analyze-btn" class="primary-btn">Analyze</button>
+            <button id="copy-results-btn" class="secondary-btn">Copy Results</button>
+          </div>
+
+          <div class="form-group">
+            <label for="analysis-results">Analysis Results:</label>
+            <div class="analysis-results" id="analysis-results">
+              <div class="empty-state">No analysis results yet. Extract content and click 'Analyze' to get AI insights.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Tab -->
+      <div class="tab-content" id="settings-tab">
+        <h2>Settings</h2>
+
+        <div class="settings-section">
+          <h3>AI API Configuration</h3>
+          <p class="settings-description">Configure your AI API keys to enable content analysis features.</p>
+
+          <div class="form-group">
+            <label for="openrouter-api-key">OpenRouter API Key:</label>
+            <input type="password" id="openrouter-api-key" class="api-key-input" placeholder="Enter your OpenRouter API key">
+            <label for="openrouter-model">OpenRouter Model:</label>
+            <select id="openrouter-model" class="model-select">
+              <option value="anthropic/claude-3-haiku">Claude 3 Haiku (Fast & Affordable)</option>
+              <option value="anthropic/claude-3-sonnet">Claude 3 Sonnet (Balanced)</option>
+              <option value="anthropic/claude-3-opus">Claude 3 Opus (Most Capable)</option>
+              <option value="openai/gpt-3.5-turbo">GPT-3.5 Turbo</option>
+              <option value="openai/gpt-4">GPT-4</option>
+              <option value="openai/gpt-4-turbo">GPT-4 Turbo</option>
+              <option value="meta-llama/llama-2-70b-chat">Llama 2 70B</option>
+              <option value="mistralai/mixtral-8x7b-instruct">Mixtral 8x7B</option>
+            </select>
+            <div class="api-key-actions">
+              <button id="save-openrouter-key-btn" class="secondary-btn">Save</button>
+              <button id="clear-openrouter-key-btn" class="text-btn">Clear</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="openai-api-key">OpenAI API Key:</label>
+            <input type="password" id="openai-api-key" class="api-key-input" placeholder="Enter your OpenAI API key">
+            <label for="openai-model">OpenAI Model:</label>
+            <select id="openai-model" class="model-select">
+              <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Fast & Affordable)</option>
+              <option value="gpt-4">GPT-4 (Most Capable)</option>
+              <option value="gpt-4-turbo-preview">GPT-4 Turbo (Latest)</option>
+            </select>
+            <div class="api-key-actions">
+              <button id="save-openai-key-btn" class="secondary-btn">Save</button>
+              <button id="clear-openai-key-btn" class="text-btn">Clear</button>
+            </div>
+          </div>
+
+          <div class="settings-info">
+            <h4>API Key Information:</h4>
+            <ul>
+              <li>API keys are stored securely in your browser's extension storage</li>
+              <li>Keys are never transmitted except to the respective AI services</li>
+              <li>You can obtain API keys from <a href="https://openrouter.ai" target="_blank">OpenRouter</a> or <a href="https://platform.openai.com" target="_blank">OpenAI</a></li>
+              <li>At least one API key is required to use the AI analysis features</li>
+            </ul>
+            <div style="margin-top: 12px;">
+              <button id="debug-storage-btn" class="text-btn">Debug Storage (Check Console)</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Inspector Tab (Original Element Selection) -->

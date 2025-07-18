@@ -287,7 +287,26 @@ const elements = {
   // Results Tab
   resultsContainer: document.getElementById('results-container'),
   clearResultsBtn: document.getElementById('clear-results-btn'),
-  
+
+  // Analyzer Tab
+  inspectElementBtn: document.getElementById('inspect-element-btn'),
+  clearContentBtn: document.getElementById('clear-content-btn'),
+  extractedContent: document.getElementById('extracted-content'),
+  analysisPrompt: document.getElementById('analysis-prompt'),
+  analyzeBtn: document.getElementById('analyze-btn'),
+  copyResultsBtn: document.getElementById('copy-results-btn'),
+  analysisResults: document.getElementById('analysis-results'),
+
+  // Settings Tab
+  openrouterApiKey: document.getElementById('openrouter-api-key'),
+  openrouterModel: document.getElementById('openrouter-model'),
+  openaiApiKey: document.getElementById('openai-api-key'),
+  openaiModel: document.getElementById('openai-model'),
+  saveOpenrouterKeyBtn: document.getElementById('save-openrouter-key-btn'),
+  clearOpenrouterKeyBtn: document.getElementById('clear-openrouter-key-btn'),
+  saveOpenaiKeyBtn: document.getElementById('save-openai-key-btn'),
+  clearOpenaiKeyBtn: document.getElementById('clear-openai-key-btn'),
+
   // Element Selector
   elementSelectorOverlay: document.getElementById('element-selector-overlay'),
   cancelSelectionBtn: document.getElementById('cancel-selection-btn'),
@@ -379,7 +398,19 @@ function setupEventListeners() {
 
   // Results Tab
   elements.clearResultsBtn.addEventListener('click', clearResults);
-  
+
+  // Analyzer Tab
+  elements.inspectElementBtn.addEventListener('click', startContentInspection);
+  elements.clearContentBtn.addEventListener('click', clearExtractedContent);
+  elements.analyzeBtn.addEventListener('click', analyzeContent);
+  elements.copyResultsBtn.addEventListener('click', copyAnalysisResults);
+
+  // Settings Tab
+  elements.saveOpenrouterKeyBtn.addEventListener('click', () => saveApiKey('openrouter'));
+  elements.clearOpenrouterKeyBtn.addEventListener('click', () => clearApiKey('openrouter'));
+  elements.saveOpenaiKeyBtn.addEventListener('click', () => saveApiKey('openai'));
+  elements.clearOpenaiKeyBtn.addEventListener('click', () => clearApiKey('openai'));
+
   // Element Selector
   elements.cancelSelectionBtn.addEventListener('click', cancelElementSelection);
 }
@@ -1507,6 +1538,346 @@ window.editTestCase = editTestCase;
 window.deleteTestCase = deleteTestCase;
 window.toggleTestCase = toggleTestCase;
 window.moveTestCase = moveTestCase;
+
+// AI Content Analyzer Functions
+function startContentInspection() {
+  state.isSelectingElement = true;
+  elements.inspectElementBtn.textContent = 'Click on any element...';
+  elements.inspectElementBtn.disabled = true;
+
+  // Send message to content script to start element inspection
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    chrome.tabs.sendMessage(tabs[0].id, {
+      action: 'startContentInspection'
+    }, (response) => {
+      if (chrome.runtime.lastError) {
+        console.error('Error starting content inspection:', chrome.runtime.lastError);
+        resetInspectionButton();
+        showStatus('Error: Could not start element inspection', 'error');
+      }
+    });
+  });
+}
+
+function resetInspectionButton() {
+  state.isSelectingElement = false;
+  elements.inspectElementBtn.textContent = 'Inspect Element';
+  elements.inspectElementBtn.disabled = false;
+}
+
+function clearExtractedContent() {
+  elements.extractedContent.value = '';
+  elements.analysisResults.innerHTML = '<div class="empty-state">No analysis results yet. Extract content and click \'Analyze\' to get AI insights.</div>';
+}
+
+async function analyzeContent() {
+  const content = elements.extractedContent.value.trim();
+  const prompt = elements.analysisPrompt.value.trim();
+
+  if (!content) {
+    showStatus('Please extract some content first', 'error');
+    return;
+  }
+
+  if (!prompt) {
+    showStatus('Please enter analysis instructions', 'error');
+    return;
+  }
+
+  // Check if API keys are available
+  const apiKeys = await getApiKeys();
+  console.log('API keys check:', apiKeys);
+
+  if (!apiKeys.openrouter && !apiKeys.openai) {
+    console.log('No API keys found - showing error');
+    showStatus('Please configure at least one API key in Settings', 'error');
+    return;
+  }
+
+  console.log('API keys found, proceeding with analysis');
+
+  // Show loading state
+  elements.analyzeBtn.disabled = true;
+  elements.analyzeBtn.textContent = 'Analyzing...';
+  elements.analysisResults.innerHTML = '<div class="loading">Analyzing content with AI...</div>';
+  elements.analysisResults.classList.add('loading');
+
+  try {
+    const result = await performAIAnalysis(content, prompt, apiKeys);
+
+    // Display results
+    elements.analysisResults.classList.remove('loading');
+    elements.analysisResults.textContent = result;
+    showStatus('Analysis completed successfully', 'success');
+
+  } catch (error) {
+    console.error('Analysis error:', error);
+    elements.analysisResults.classList.remove('loading');
+    elements.analysisResults.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+    showStatus('Analysis failed: ' + error.message, 'error');
+  } finally {
+    elements.analyzeBtn.disabled = false;
+    elements.analyzeBtn.textContent = 'Analyze';
+  }
+}
+
+async function performAIAnalysis(content, prompt, apiKeys) {
+  const fullPrompt = `${prompt}\n\nContent to analyze:\n${content}`;
+
+  // Try OpenRouter first, then OpenAI
+  if (apiKeys.openrouter) {
+    try {
+      return await callOpenRouter(fullPrompt, apiKeys.openrouter, apiKeys.openrouterModel);
+    } catch (error) {
+      console.warn('OpenRouter failed, trying OpenAI:', error);
+      if (apiKeys.openai) {
+        return await callOpenAI(fullPrompt, apiKeys.openai, apiKeys.openaiModel);
+      }
+      throw error;
+    }
+  } else if (apiKeys.openai) {
+    return await callOpenAI(fullPrompt, apiKeys.openai, apiKeys.openaiModel);
+  } else {
+    throw new Error('No API keys configured');
+  }
+}
+
+async function callOpenRouter(prompt, apiKey, model = 'anthropic/claude-3-haiku') {
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': chrome.runtime.getURL(''),
+      'X-Title': 'Console Script Manager'
+    },
+    body: JSON.stringify({
+      model: model,
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      max_tokens: 1000
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error?.message || `OpenRouter API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.choices[0]?.message?.content || 'No response received';
+}
+
+async function callOpenAI(prompt, apiKey, model = 'gpt-3.5-turbo') {
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: model,
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      max_tokens: 1000
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error?.message || `OpenAI API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.choices[0]?.message?.content || 'No response received';
+}
+
+function copyAnalysisResults() {
+  const results = elements.analysisResults.textContent;
+  if (!results || results.includes('No analysis results yet')) {
+    showStatus('No results to copy', 'error');
+    return;
+  }
+
+  navigator.clipboard.writeText(results).then(() => {
+    showStatus('Results copied to clipboard', 'success');
+  }).catch(() => {
+    showStatus('Failed to copy results', 'error');
+  });
+}
+
+// Settings Functions
+function saveApiKey(provider) {
+  const keyInput = provider === 'openrouter' ? elements.openrouterApiKey : elements.openaiApiKey;
+  const modelSelect = provider === 'openrouter' ? elements.openrouterModel : elements.openaiModel;
+
+  const apiKey = keyInput.value.trim();
+  const selectedModel = modelSelect.value;
+
+  if (!apiKey) {
+    showStatus('Please enter an API key', 'error');
+    return;
+  }
+
+  // Basic validation
+  if (apiKey.length < 10) {
+    showStatus('API key appears to be too short', 'error');
+    return;
+  }
+
+  try {
+    // Check if chrome.storage is available
+    if (!chrome || !chrome.storage || !chrome.storage.local) {
+      console.error('Chrome storage API not available');
+      showStatus('Storage API not available', 'error');
+      return;
+    }
+
+    // Save both API key and selected model
+    const saveData = {
+      [`${provider}_api_key`]: apiKey,
+      [`${provider}_model`]: selectedModel
+    };
+
+    console.log('Saving API settings:', {
+      provider,
+      keyLength: apiKey.length,
+      model: selectedModel,
+      saveData
+    });
+
+    chrome.storage.local.set(saveData, () => {
+      if (chrome.runtime.lastError) {
+        console.error('Error saving API settings:', chrome.runtime.lastError);
+        showStatus('Failed to save API settings', 'error');
+        return;
+      }
+
+      // Verify the save worked
+      chrome.storage.local.get([`${provider}_api_key`, `${provider}_model`], (verification) => {
+        console.log('Verification after save:', verification);
+
+        if (!verification) {
+          console.warn('Verification returned undefined');
+          showStatus('Warning: Could not verify save', 'error');
+        } else {
+          keyInput.value = '';
+          showStatus(`${provider === 'openrouter' ? 'OpenRouter' : 'OpenAI'} settings saved securely`, 'success');
+
+          // Update placeholder to show key is configured
+          keyInput.placeholder = 'API key configured (hidden for security)';
+        }
+      });
+    });
+
+  } catch (error) {
+    console.error('Error saving API settings:', error);
+    showStatus('Failed to save API settings', 'error');
+  }
+}
+
+async function clearApiKey(provider) {
+  try {
+    await chrome.storage.local.remove([`${provider}_api_key`, `${provider}_model`]);
+
+    // Reset placeholder
+    const keyInput = provider === 'openrouter' ? elements.openrouterApiKey : elements.openaiApiKey;
+    const modelSelect = provider === 'openrouter' ? elements.openrouterModel : elements.openaiModel;
+
+    keyInput.placeholder = `Enter your ${provider === 'openrouter' ? 'OpenRouter' : 'OpenAI'} API key`;
+    modelSelect.selectedIndex = 0; // Reset to first option
+
+    showStatus(`${provider === 'openrouter' ? 'OpenRouter' : 'OpenAI'} settings cleared`, 'success');
+  } catch (error) {
+    console.error('Error clearing API settings:', error);
+    showStatus('Failed to clear API settings', 'error');
+  }
+}
+
+function getApiKeys() {
+  return new Promise((resolve) => {
+    try {
+      // Check if chrome.storage is available
+      if (!chrome || !chrome.storage || !chrome.storage.local) {
+        console.error('Chrome storage API not available');
+        resolve({});
+        return;
+      }
+
+      chrome.storage.local.get([
+        'openrouter_api_key', 'openrouter_model',
+        'openai_api_key', 'openai_model'
+      ], (result) => {
+        // Handle case where result is undefined
+        if (!result) {
+          console.warn('Storage result is undefined, returning empty object');
+          resolve({});
+          return;
+        }
+
+        console.log('Retrieved API keys from storage:', {
+          openrouter: result.openrouter_api_key ? 'configured' : 'not configured',
+          openai: result.openai_api_key ? 'configured' : 'not configured',
+          rawResult: result
+        });
+
+        resolve({
+          openrouter: result.openrouter_api_key,
+          openrouterModel: result.openrouter_model || 'anthropic/claude-3-haiku',
+          openai: result.openai_api_key,
+          openaiModel: result.openai_model || 'gpt-3.5-turbo'
+        });
+      });
+    } catch (error) {
+      console.error('Error getting API keys:', error);
+      resolve({});
+    }
+  });
+}
+
+// Load API key status on settings tab
+async function loadApiKeyStatus() {
+  const apiKeys = await getApiKeys();
+
+  if (apiKeys.openrouter) {
+    elements.openrouterApiKey.placeholder = 'API key configured (hidden for security)';
+    elements.openrouterModel.value = apiKeys.openrouterModel;
+  }
+
+  if (apiKeys.openai) {
+    elements.openaiApiKey.placeholder = 'API key configured (hidden for security)';
+    elements.openaiModel.value = apiKeys.openaiModel;
+  }
+}
+
+// Message listener for content inspection responses
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'contentExtracted') {
+    elements.extractedContent.value = message.content;
+    resetInspectionButton();
+    showStatus('Content extracted successfully', 'success');
+  } else if (message.action === 'contentInspectionCancelled') {
+    resetInspectionButton();
+    showStatus('Content inspection cancelled', 'info');
+  }
+});
+
+// Initialize settings when tab is shown
+document.addEventListener('DOMContentLoaded', () => {
+  // Load API key status when settings tab is first shown
+  const settingsTab = document.querySelector('[data-tab="settings"]');
+  if (settingsTab) {
+    settingsTab.addEventListener('click', loadApiKeyStatus);
+  }
+});
 
 
 

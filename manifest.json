@@ -11,7 +11,9 @@
     "activeTab",
     "storage",
     "tabs",
-    "<all_urls>"
+    "<all_urls>",
+    "https://openrouter.ai/*",
+    "https://api.openai.com/*"
   ],
   "browser_action": {
     "default_icon": "icons/icon-48.svg",
