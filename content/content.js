@@ -7,8 +7,10 @@ let highlightOverlay = null;
 
 // Listen for messages from popup or background script
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+
   // Handle element selection mode
   if (message.action === 'startElementSelection') {
+    console.log('Starting element selection in content script');
     startElementSelection();
     sendResponse({ success: true });
     return true;
@@ -38,8 +40,39 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
+// Helper function to check if an element is part of the overlay system
+function isOverlayElement(element) {
+  if (!element) return false;
+
+  // Check if it's one of our overlay elements
+  if (element.id === 'csm-instruction-overlay' ||
+      element.id === 'csm-highlight-overlay' ||
+      element.id === 'csm-cancel-selection') {
+    return true;
+  }
+
+  // Check if it's a child of any overlay element
+  const instructionOverlay = document.getElementById('csm-instruction-overlay');
+  const highlightOverlay = document.getElementById('csm-highlight-overlay');
+
+  if (instructionOverlay && instructionOverlay.contains(element)) {
+    return true;
+  }
+
+  if (highlightOverlay && highlightOverlay.contains(element)) {
+    return true;
+  }
+
+  return false;
+}
+
 // Start element selection mode
 function startElementSelection() {
+  console.log('Starting element selection');
+
+  // Clean up any existing overlays first
+  cleanupElementSelection();
+
   isSelectingElement = true;
   
   // Create instruction overlay
@@ -54,13 +87,14 @@ function startElementSelection() {
     color: white;
     padding: 10px 20px;
     border-radius: 4px;
-    z-index: 999999;
+    z-index: 2147483647;
     font-family: sans-serif;
     font-size: 14px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
     display: flex;
     align-items: center;
     gap: 10px;
+    pointer-events: auto;
   `;
   
   instructionOverlay.innerHTML = `
@@ -86,8 +120,9 @@ function startElementSelection() {
     pointer-events: none;
     border: 2px solid #4F46E5;
     background-color: rgba(79, 70, 229, 0.1);
-    z-index: 999998;
+    z-index: 2147483646;
     display: none;
+    box-sizing: border-box;
   `;
   
   document.body.appendChild(highlightOverlay);
@@ -98,30 +133,46 @@ function startElementSelection() {
   document.addEventListener('click', handleClick);
   document.addEventListener('keydown', handleKeyDown);
   
-  // Add event listener to cancel button
-  document.getElementById('csm-cancel-selection').addEventListener('click', cancelElementSelection);
+  // Add event listener to cancel button with a small delay to ensure element is rendered
+  setTimeout(() => {
+    const cancelBtn = document.getElementById('csm-cancel-selection');
+    if (cancelBtn) {
+      // Store the handler so we can remove it later
+      window.csmCancelHandler = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        console.log('Cancel button clicked');
+        cancelElementSelection();
+      };
+      cancelBtn.addEventListener('click', window.csmCancelHandler, true);
+      console.log('Cancel button event listener added');
+    } else {
+      console.error('Cancel button not found');
+    }
+  }, 10);
 }
 
 // Handle mouse over event during element selection
 function handleMouseOver(event) {
   if (!isSelectingElement) return;
-  
-  // Prevent selecting the overlay itself
-  if (event.target.id === 'csm-instruction-overlay' || 
-      event.target.id === 'csm-highlight-overlay' ||
-      event.target.id === 'csm-cancel-selection') {
+
+  // Prevent selecting the overlay itself or any child elements
+  if (isOverlayElement(event.target)) {
     return;
   }
   
   highlightedElement = event.target;
   
   // Update highlight overlay position and size
-  const rect = highlightedElement.getBoundingClientRect();
-  highlightOverlay.style.display = 'block';
-  highlightOverlay.style.top = `${rect.top + window.scrollY}px`;
-  highlightOverlay.style.left = `${rect.left + window.scrollX}px`;
-  highlightOverlay.style.width = `${rect.width}px`;
-  highlightOverlay.style.height = `${rect.height}px`;
+  if (highlightOverlay) {
+    const rect = highlightedElement.getBoundingClientRect();
+    highlightOverlay.style.display = 'block';
+    highlightOverlay.style.top = `${rect.top + window.scrollY}px`;
+    highlightOverlay.style.left = `${rect.left + window.scrollX}px`;
+    highlightOverlay.style.width = `${rect.width}px`;
+    highlightOverlay.style.height = `${rect.height}px`;
+  }
 }
 
 // Handle mouse out event during element selection
@@ -135,11 +186,10 @@ function handleMouseOut(event) {
 // Handle click event during element selection
 function handleClick(event) {
   if (!isSelectingElement) return;
-  
-  // Prevent selecting the overlay itself
-  if (event.target.id === 'csm-instruction-overlay' || 
-      event.target.id === 'csm-highlight-overlay' ||
-      event.target.id === 'csm-cancel-selection') {
+  console.log('Click event in content script:', event);
+
+  // Prevent selecting the overlay itself or any child elements
+  if (isOverlayElement(event.target)) {
     event.preventDefault();
     event.stopPropagation();
     return;
@@ -149,23 +199,42 @@ function handleClick(event) {
   event.stopPropagation();
   
   const selectedElement = event.target;
+  console.log('Element selected:', selectedElement);
+
   const xpath = getXPath(selectedElement);
-  
+  console.log('Generated XPath:', xpath);
+
   // Gather element information
   const elementInfo = {
     tagName: selectedElement.tagName.toLowerCase(),
-    id: selectedElement.id,
-    classes: selectedElement.className,
-    textContent: selectedElement.textContent.trim().substring(0, 100) + 
+    id: selectedElement.id || '',
+    className: selectedElement.className || '',
+    classes: selectedElement.className || '', // Keep both for compatibility
+    textContent: selectedElement.textContent.trim().substring(0, 100) +
                 (selectedElement.textContent.trim().length > 100 ? '...' : '')
   };
+
+  console.log('Element info:', elementInfo);
   
-  // Send message to background script
-  browser.runtime.sendMessage({
+  // Send message to background script with complete element data
+  const messageData = {
     action: 'elementSelected',
     xpath: xpath,
-    elementInfo: elementInfo
-  });
+    elementInfo: elementInfo,
+    elementData: {
+      tagName: selectedElement.tagName || '',
+      id: selectedElement.id || '',
+      className: selectedElement.className || '',
+      textContent: selectedElement.textContent || '',
+      attributes: getElementAttributes(selectedElement),
+      outerHTML: selectedElement.outerHTML ? selectedElement.outerHTML.substring(0, 500) : '', // Truncate for safety
+      // Store element reference for Playwright locator generation
+      elementSelector: generateElementSelector(selectedElement)
+    }
+  };
+
+  console.log('Sending message to background:', messageData);
+  browser.runtime.sendMessage(messageData);
   
   // Clean up
   cleanupElementSelection();
@@ -183,58 +252,177 @@ function handleKeyDown(event) {
 
 // Cancel element selection mode
 function cancelElementSelection() {
+  console.log('Cancelling element selection');
   cleanupElementSelection();
+
+  // Notify background script that selection was cancelled
+  browser.runtime.sendMessage({
+    action: 'elementSelectionCancelled'
+  }).catch(error => {
+    console.log('Could not send cancellation message:', error);
+  });
 }
+
+// Helper function to get all element attributes
+function getElementAttributes(element) {
+  const attributes = {};
+  for (let i = 0; i < element.attributes.length; i++) {
+    const attr = element.attributes[i];
+    attributes[attr.name] = attr.value;
+  }
+  return attributes;
+}
+
+// Helper function to generate a reliable element selector
+function generateElementSelector(element) {
+  // Try ID first
+  if (element.id) {
+    return `#${element.id}`;
+  }
+
+  // Try data-testid attributes
+  const testId = element.getAttribute('data-testid') ||
+                 element.getAttribute('data-test-id') ||
+                 element.getAttribute('data-cy');
+  if (testId) {
+    return `[data-testid="${testId}"]`;
+  }
+
+  // Try class combination
+  if (element.className) {
+    const classes = element.className.split(' ').filter(c => c.trim());
+    if (classes.length > 0) {
+      return `.${classes.join('.')}`;
+    }
+  }
+
+  // Fallback to tag name with position
+  const tagName = element.tagName.toLowerCase();
+  const siblings = Array.from(element.parentNode?.children || []).filter(el => el.tagName === element.tagName);
+  const index = siblings.indexOf(element);
+
+  if (siblings.length > 1) {
+    return `${tagName}:nth-of-type(${index + 1})`;
+  }
+
+  return tagName;
+}
+
+// Debug function to check overlay state
+function debugOverlayState() {
+  console.log('=== Overlay Debug State ===');
+  console.log('isSelectingElement:', isSelectingElement);
+  console.log('highlightedElement:', highlightedElement);
+
+  const instructionOverlay = document.getElementById('csm-instruction-overlay');
+  const highlightOverlay = document.getElementById('csm-highlight-overlay');
+  const cancelBtn = document.getElementById('csm-cancel-selection');
+
+  console.log('Instruction overlay exists:', !!instructionOverlay);
+  console.log('Highlight overlay exists:', !!highlightOverlay);
+  console.log('Cancel button exists:', !!cancelBtn);
+
+  if (instructionOverlay) {
+    console.log('Instruction overlay style:', instructionOverlay.style.cssText);
+  }
+
+  if (highlightOverlay) {
+    console.log('Highlight overlay style:', highlightOverlay.style.cssText);
+  }
+
+  console.log('=== End Overlay Debug ===');
+}
+
+// Make debug function globally available
+window.debugOverlayState = debugOverlayState;
 
 // Clean up element selection mode
 function cleanupElementSelection() {
+  console.log('Cleaning up element selection');
   isSelectingElement = false;
   highlightedElement = null;
-  
+
   // Remove overlays
   const instructionOverlay = document.getElementById('csm-instruction-overlay');
   if (instructionOverlay) {
+    // Remove cancel button event listener if it exists
+    const cancelBtn = document.getElementById('csm-cancel-selection');
+    if (cancelBtn && window.csmCancelHandler) {
+      cancelBtn.removeEventListener('click', window.csmCancelHandler, true);
+      window.csmCancelHandler = null;
+    }
     instructionOverlay.remove();
+    console.log('Instruction overlay removed');
   }
-  
+
   if (highlightOverlay) {
     highlightOverlay.remove();
     highlightOverlay = null;
+    console.log('Highlight overlay removed');
   }
-  
+
   // Remove event listeners
   document.removeEventListener('mouseover', handleMouseOver);
   document.removeEventListener('mouseout', handleMouseOut);
   document.removeEventListener('click', handleClick);
   document.removeEventListener('keydown', handleKeyDown);
+
+  console.log('Element selection cleanup complete');
 }
 
 // Get XPath for an element
 function getXPath(element) {
-  if (element.id) {
+  // Safety check
+  if (!element || !element.tagName) {
+    return null;
+  }
+
+  // If element has an ID, use it
+  if (element.id && element.id.trim()) {
     return `//*[@id="${element.id}"]`;
   }
-  
+
+  // If it's the document element
+  if (element === document.documentElement) {
+    return '/html';
+  }
+
+  // If it's the body element
   if (element === document.body) {
     return '/html/body';
   }
-  
+
+  // If no parent, return basic path
+  if (!element.parentNode) {
+    return `/${element.tagName.toLowerCase()}`;
+  }
+
   let ix = 0;
   const siblings = element.parentNode.childNodes;
-  
+
   for (let i = 0; i < siblings.length; i++) {
     const sibling = siblings[i];
-    
+
     if (sibling === element) {
-      const path = getXPath(element.parentNode);
+      const parentPath = getXPath(element.parentNode);
       const tagName = element.tagName.toLowerCase();
-      return `${path}/${tagName}[${ix + 1}]`;
+
+      // Ensure parent path exists
+      if (!parentPath) {
+        return `/${tagName}[${ix + 1}]`;
+      }
+
+      return `${parentPath}/${tagName}[${ix + 1}]`;
     }
-    
-    if (sibling.nodeType === 1 && sibling.tagName.toLowerCase() === element.tagName.toLowerCase()) {
+
+    if (sibling.nodeType === 1 && sibling.tagName &&
+        sibling.tagName.toLowerCase() === element.tagName.toLowerCase()) {
       ix++;
     }
   }
+
+  // Fallback if something goes wrong
+  return `/${element.tagName.toLowerCase()}`;
 }
 
 // Test an XPath expression
@@ -852,7 +1040,258 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     startContentInspection();
     sendResponse({ success: true });
   }
+
+  if (message.action === 'testPlaywrightLocator') {
+    testPlaywrightLocator(message.locator)
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true; // Keep message channel open for async response
+  }
 });
+
+// Playwright Locator Testing Functions
+async function testPlaywrightLocator(locator) {
+  try {
+    let elements = [];
+
+    // Parse the locator and convert to DOM query
+    const locatorValue = locator.value;
+
+    if (locator.type === 'getByTestId') {
+      const testId = extractTestId(locatorValue);
+      elements = document.querySelectorAll(`[data-testid="${testId}"], [data-test-id="${testId}"], [data-cy="${testId}"]`);
+    } else if (locator.type === 'getByRole') {
+      elements = findByRole(locatorValue);
+    } else if (locator.type === 'getByText') {
+      const text = extractText(locatorValue);
+      elements = findByText(text);
+    } else if (locator.type === 'getByLabel') {
+      const label = extractLabel(locatorValue);
+      elements = findByLabel(label);
+    } else if (locator.type === 'getByPlaceholder') {
+      const placeholder = extractPlaceholder(locatorValue);
+      elements = document.querySelectorAll(`[placeholder="${placeholder}"]`);
+    } else if (locator.type === 'locator') {
+      const selector = extractCSSSelector(locatorValue);
+      elements = document.querySelectorAll(selector);
+    }
+
+    // Highlight found elements
+    highlightElements(Array.from(elements));
+
+    return {
+      success: true,
+      count: elements.length,
+      elements: Array.from(elements).map(el => ({
+        tagName: el.tagName,
+        id: el.id,
+        className: el.className,
+        textContent: el.textContent.trim().substring(0, 50)
+      }))
+    };
+  } catch (error) {
+    console.error('Error testing Playwright locator:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+// Helper functions for locator parsing
+function extractTestId(locatorValue) {
+  const match = locatorValue.match(/getByTestId\(['"]([^'"]+)['"]\)/);
+  return match ? match[1] : '';
+}
+
+function extractText(locatorValue) {
+  const match = locatorValue.match(/getByText\(['"]([^'"]+)['"]\)/);
+  return match ? match[1] : '';
+}
+
+function extractLabel(locatorValue) {
+  const match = locatorValue.match(/getByLabel\(['"]([^'"]+)['"]\)/);
+  return match ? match[1] : '';
+}
+
+function extractPlaceholder(locatorValue) {
+  const match = locatorValue.match(/getByPlaceholder\(['"]([^'"]+)['"]\)/);
+  return match ? match[1] : '';
+}
+
+function extractCSSSelector(locatorValue) {
+  const match = locatorValue.match(/locator\(['"]([^'"]+)['"]\)/);
+  return match ? match[1] : '';
+}
+
+function findByRole(locatorValue) {
+  const roleMatch = locatorValue.match(/getByRole\(['"]([^'"]+)['"](?:,\s*\{\s*name:\s*['"]([^'"]+)['"]\s*\})?\)/);
+  if (!roleMatch) return [];
+
+  const role = roleMatch[1];
+  const name = roleMatch[2];
+
+  const elements = [];
+
+  // Find elements with explicit role
+  const explicitRoleElements = document.querySelectorAll(`[role="${role}"]`);
+  elements.push(...explicitRoleElements);
+
+  // Find elements with implicit role
+  const implicitRoleElements = findElementsByImplicitRole(role);
+  elements.push(...implicitRoleElements);
+
+  // Filter by name if specified
+  if (name) {
+    return elements.filter(el => {
+      const accessibleName = getElementAccessibleName(el);
+      return accessibleName && accessibleName.includes(name);
+    });
+  }
+
+  return elements;
+}
+
+function findElementsByImplicitRole(role) {
+  const roleSelectors = {
+    'button': 'button, input[type="button"], input[type="submit"], input[type="reset"]',
+    'link': 'a[href]',
+    'textbox': 'input[type="text"], input[type="email"], input[type="password"], input[type="search"], input[type="url"], textarea',
+    'checkbox': 'input[type="checkbox"]',
+    'radio': 'input[type="radio"]',
+    'combobox': 'select',
+    'heading': 'h1, h2, h3, h4, h5, h6',
+    'img': 'img',
+    'navigation': 'nav',
+    'main': 'main',
+    'banner': 'header',
+    'contentinfo': 'footer',
+    'region': 'section',
+    'article': 'article',
+    'complementary': 'aside',
+    'form': 'form',
+    'table': 'table',
+    'list': 'ul, ol',
+    'listitem': 'li'
+  };
+
+  const selector = roleSelectors[role];
+  return selector ? Array.from(document.querySelectorAll(selector)) : [];
+}
+
+function getElementAccessibleName(element) {
+  // Check aria-label
+  const ariaLabel = element.getAttribute('aria-label');
+  if (ariaLabel) return ariaLabel;
+
+  // Check aria-labelledby
+  const labelledBy = element.getAttribute('aria-labelledby');
+  if (labelledBy) {
+    const labelElement = document.getElementById(labelledBy);
+    if (labelElement) return labelElement.textContent.trim();
+  }
+
+  // Check associated label
+  const id = element.getAttribute('id');
+  if (id) {
+    const label = document.querySelector(`label[for="${id}"]`);
+    if (label) return label.textContent.trim();
+  }
+
+  // Check parent label
+  const parentLabel = element.closest('label');
+  if (parentLabel) return parentLabel.textContent.trim();
+
+  // For buttons and links, use text content
+  if (['button', 'a'].includes(element.tagName.toLowerCase())) {
+    return element.textContent.trim();
+  }
+
+  // For images, use alt text
+  if (element.tagName.toLowerCase() === 'img') {
+    return element.getAttribute('alt');
+  }
+
+  return null;
+}
+
+function findByText(text) {
+  const elements = [];
+  const walker = document.createTreeWalker(
+    document.body,
+    NodeFilter.SHOW_ELEMENT,
+    {
+      acceptNode: function(node) {
+        // Skip script and style elements
+        if (['SCRIPT', 'STYLE'].includes(node.tagName)) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    }
+  );
+
+  let node;
+  while (node = walker.nextNode()) {
+    if (node.textContent.trim() === text) {
+      elements.push(node);
+    }
+  }
+
+  return elements;
+}
+
+function findByLabel(labelText) {
+  const elements = [];
+
+  // Find labels with matching text
+  const labels = Array.from(document.querySelectorAll('label')).filter(label =>
+    label.textContent.trim().includes(labelText)
+  );
+
+  labels.forEach(label => {
+    // Check for explicit association (for attribute)
+    const forAttr = label.getAttribute('for');
+    if (forAttr) {
+      const element = document.getElementById(forAttr);
+      if (element) elements.push(element);
+    }
+
+    // Check for implicit association (nested element)
+    const nestedInput = label.querySelector('input, select, textarea');
+    if (nestedInput) elements.push(nestedInput);
+  });
+
+  return elements;
+}
+
+function highlightElements(elements) {
+  // Remove previous highlights
+  const previousHighlights = document.querySelectorAll('.playwright-test-highlight');
+  previousHighlights.forEach(el => el.classList.remove('playwright-test-highlight'));
+
+  // Add highlight styles if not already added
+  if (!document.querySelector('#playwright-test-styles')) {
+    const style = document.createElement('style');
+    style.id = 'playwright-test-styles';
+    style.textContent = `
+      .playwright-test-highlight {
+        outline: 3px solid #00ff00 !important;
+        outline-offset: 2px !important;
+        background-color: rgba(0, 255, 0, 0.1) !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // Highlight found elements
+  elements.forEach(el => el.classList.add('playwright-test-highlight'));
+
+  // Remove highlights after 3 seconds
+  setTimeout(() => {
+    elements.forEach(el => el.classList.remove('playwright-test-highlight'));
+  }, 3000);
+}
 
 // Initialize assertion library when content script loads
 injectAssertionLibrary();

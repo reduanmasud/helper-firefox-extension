@@ -307,9 +307,36 @@ const elements = {
   saveOpenaiKeyBtn: document.getElementById('save-openai-key-btn'),
   clearOpenaiKeyBtn: document.getElementById('clear-openai-key-btn'),
 
+  // Enhanced Inspector Tab
+  startSelectionBtn: document.getElementById('start-selection-btn'),
+  cancelSelectionBtn: document.getElementById('cancel-selection-btn'),
+  elementInfoPanel: document.getElementById('element-info'),
+
+  // Locator Type Controls
+  xpathModeRadio: document.getElementById('xpath-mode'),
+  playwrightModeRadio: document.getElementById('playwright-mode'),
+
+  // XPath Section
+  xpathSection: document.getElementById('xpath-section'),
+  xpathValueInput: document.getElementById('xpath-value'),
+  copyXPathBtn: document.getElementById('copy-xpath-btn'),
+
+  // Playwright Section
+  playwrightSection: document.getElementById('playwright-section'),
+  playwrightLocators: document.getElementById('playwright-locators'),
+
+  // Actions
+  insertLocatorBtn: document.getElementById('insert-locator-btn'),
+  testLocatorBtn: document.getElementById('test-locator-btn'),
+  generateSnippetBtn: document.getElementById('generate-snippet-btn'),
+
+  // Code Snippet
+  snippetSection: document.getElementById('snippet-section'),
+  codeSnippet: document.getElementById('code-snippet'),
+  copySnippetBtn: document.getElementById('copy-snippet-btn'),
+
   // Element Selector
   elementSelectorOverlay: document.getElementById('element-selector-overlay'),
-  cancelSelectionBtn: document.getElementById('cancel-selection-btn'),
   
   // Status
   statusMessage: document.getElementById('status-message')
@@ -411,8 +438,22 @@ function setupEventListeners() {
   elements.saveOpenaiKeyBtn.addEventListener('click', () => saveApiKey('openai'));
   elements.clearOpenaiKeyBtn.addEventListener('click', () => clearApiKey('openai'));
 
-  // Element Selector
+  // Enhanced Inspector Tab
+  elements.startSelectionBtn.addEventListener('click', startElementSelection);
   elements.cancelSelectionBtn.addEventListener('click', cancelElementSelection);
+
+  // Locator Type Controls
+  elements.xpathModeRadio.addEventListener('change', switchToXPathMode);
+  elements.playwrightModeRadio.addEventListener('change', switchToPlaywrightMode);
+
+  // XPath Actions
+  elements.copyXPathBtn.addEventListener('click', copyXPathToClipboard);
+
+  // Enhanced Actions
+  elements.insertLocatorBtn.addEventListener('click', insertLocatorIntoScript);
+  elements.testLocatorBtn.addEventListener('click', testCurrentLocator);
+  elements.generateSnippetBtn.addEventListener('click', generateCodeSnippet);
+  elements.copySnippetBtn.addEventListener('click', copyCodeSnippet);
 }
 
 // Switch between tabs
@@ -1858,7 +1899,7 @@ async function loadApiKeyStatus() {
   }
 }
 
-// Message listener for content inspection responses
+// Message listener for content inspection responses and element selection
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'contentExtracted') {
     elements.extractedContent.value = message.content;
@@ -1867,8 +1908,751 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.action === 'contentInspectionCancelled') {
     resetInspectionButton();
     showStatus('Content inspection cancelled', 'info');
+  } else if (message.action === 'elementSelectedUpdate') {
+    // Handle element selection from background script
+    handleElementSelected(message.xpath, message.elementInfo, message.elementData);
+  } else if (message.action === 'elementSelectionCancelled') {
+    elements.startSelectionBtn.classList.remove('hidden');
+    elements.cancelSelectionBtn.classList.add('hidden');
+    showStatus('Element selection cancelled', 'info');
   }
 });
+
+// Enhanced Inspector Functions (Popup)
+let currentSelectedElement = null;
+let currentLocatorMode = 'xpath';
+let generatedLocators = [];
+let selectedLocatorIndex = 0;
+
+// Import the same functions from sidebar (they're identical)
+// Mode switching functions
+function switchToXPathMode() {
+  currentLocatorMode = 'xpath';
+  elements.xpathSection.classList.remove('hidden');
+  elements.playwrightSection.classList.add('hidden');
+  elements.snippetSection.classList.add('hidden');
+  updateActionButtons();
+}
+
+function switchToPlaywrightMode() {
+  currentLocatorMode = 'playwright';
+  elements.xpathSection.classList.add('hidden');
+  elements.playwrightSection.classList.remove('hidden');
+  updateActionButtons();
+
+  // Generate Playwright locators if element is selected
+  if (currentSelectedElement) {
+    generatePlaywrightLocators(currentSelectedElement);
+  }
+}
+
+// Element selection functions
+function startElementSelection() {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (!tabs[0]) {
+      showStatus('Error: No active tab found', 'error');
+      return;
+    }
+
+    chrome.tabs.sendMessage(tabs[0].id, { action: 'startElementSelection' }, (response) => {
+      if (chrome.runtime.lastError) {
+        console.error('Error starting element selection:', chrome.runtime.lastError);
+
+        // Try to inject content script if it's not responding
+        chrome.tabs.executeScript(tabs[0].id, {
+          file: 'content/content.js'
+        }, () => {
+          if (chrome.runtime.lastError) {
+            console.error('Error injecting content script:', chrome.runtime.lastError);
+            showStatus('Error: Please refresh the page and try again', 'error');
+            return;
+          }
+
+          // Try again after injection
+          setTimeout(() => {
+            chrome.tabs.sendMessage(tabs[0].id, { action: 'startElementSelection' }, (response) => {
+              if (chrome.runtime.lastError) {
+                console.error('Error after injection:', chrome.runtime.lastError);
+                showStatus('Error: Content script injection failed. Please refresh the page.', 'error');
+                return;
+              }
+
+              elements.startSelectionBtn.classList.add('hidden');
+              elements.cancelSelectionBtn.classList.remove('hidden');
+              showStatus('Click on any element on the webpage to select it', 'info');
+            });
+          }, 100);
+        });
+        return;
+      }
+
+      elements.startSelectionBtn.classList.add('hidden');
+      elements.cancelSelectionBtn.classList.remove('hidden');
+      showStatus('Click on any element on the webpage to select it', 'info');
+    });
+  });
+}
+
+function cancelElementSelection() {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    chrome.tabs.sendMessage(tabs[0].id, { action: 'cancelElementSelection' });
+  });
+
+  elements.startSelectionBtn.classList.remove('hidden');
+  elements.cancelSelectionBtn.classList.add('hidden');
+  showStatus('Element selection cancelled', 'info');
+}
+
+function copyXPathToClipboard() {
+  const xpath = elements.xpathValueInput.value;
+  if (xpath) {
+    navigator.clipboard.writeText(xpath).then(() => {
+      showStatus('XPath copied to clipboard', 'success');
+    }).catch(() => {
+      showStatus('Failed to copy XPath', 'error');
+    });
+  }
+}
+
+// Use the same Playwright locator generation functions from sidebar
+// (Copy the functions from sidebar/sidebar.js lines 1972-2269)
+
+// Playwright Locator Generation Engine (identical to sidebar)
+function generatePlaywrightLocators(element) {
+  generatedLocators = [];
+
+  // Safety check for null/undefined element
+  if (!element) {
+    console.error('generatePlaywrightLocators: element is null or undefined');
+    displayPlaywrightLocators();
+    return;
+  }
+
+  // Ensure getAttribute function exists
+  if (typeof element.getAttribute !== 'function') {
+    console.error('generatePlaywrightLocators: element does not have getAttribute method');
+    displayPlaywrightLocators();
+    return;
+  }
+
+  try {
+    // Strategy 1: Test ID (highest priority)
+    const testId = element.getAttribute('data-testid') || element.getAttribute('data-test-id') || element.getAttribute('data-cy');
+    if (testId) {
+      generatedLocators.push({
+        type: 'getByTestId',
+        value: `page.getByTestId('${testId}')`,
+        confidence: 'high',
+        description: 'Test ID selector (most reliable)'
+      });
+    }
+  } catch (error) {
+    console.error('Error generating test ID locator:', error);
+  }
+
+  try {
+    // Strategy 2: Role-based selection
+    const role = element.getAttribute('role') || getImplicitRole(element);
+    if (role) {
+      const name = getAccessibleName(element);
+      if (name) {
+        generatedLocators.push({
+          type: 'getByRole',
+          value: `page.getByRole('${role}', { name: '${name}' })`,
+          confidence: 'high',
+          description: 'Semantic role with accessible name'
+        });
+      } else {
+        generatedLocators.push({
+          type: 'getByRole',
+          value: `page.getByRole('${role}')`,
+          confidence: 'medium',
+          description: 'Semantic role selector'
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error generating role-based locator:', error);
+  }
+
+  try {
+    // Strategy 3: Label-based selection (for form elements)
+    const label = getAssociatedLabel(element);
+    if (label) {
+      generatedLocators.push({
+        type: 'getByLabel',
+        value: `page.getByLabel('${label}')`,
+        confidence: 'high',
+        description: 'Form label association'
+      });
+    }
+  } catch (error) {
+    console.error('Error generating label-based locator:', error);
+  }
+
+  try {
+    // Strategy 4: Placeholder text
+    const placeholder = element.getAttribute('placeholder');
+    if (placeholder) {
+      generatedLocators.push({
+        type: 'getByPlaceholder',
+        value: `page.getByPlaceholder('${placeholder}')`,
+        confidence: 'medium',
+        description: 'Placeholder text'
+      });
+    }
+  } catch (error) {
+    console.error('Error generating placeholder locator:', error);
+  }
+
+  try {
+    // Strategy 5: Text content
+    const textContent = getUniqueTextContent(element);
+    if (textContent) {
+      generatedLocators.push({
+        type: 'getByText',
+        value: `page.getByText('${textContent}')`,
+        confidence: textContent.length > 20 ? 'medium' : 'high',
+        description: 'Visible text content'
+      });
+    }
+  } catch (error) {
+    console.error('Error generating text content locator:', error);
+  }
+
+  try {
+    // Strategy 6: CSS Selectors
+    const cssSelectors = generateCSSSelectors(element);
+    cssSelectors.forEach(selector => {
+      generatedLocators.push({
+        type: 'locator',
+        value: `page.locator('${selector.value}')`,
+        confidence: selector.confidence,
+        description: selector.description
+      });
+    });
+  } catch (error) {
+    console.error('Error generating CSS selectors:', error);
+  }
+
+  // Display the generated locators
+  displayPlaywrightLocators();
+}
+
+// Helper functions (identical to sidebar)
+function getImplicitRole(element) {
+  if (!element || !element.tagName) {
+    return null;
+  }
+
+  const tagName = element.tagName.toLowerCase();
+  const type = element.getAttribute ? element.getAttribute('type') : null;
+
+  const roleMap = {
+    'button': 'button',
+    'a': element.getAttribute('href') ? 'link' : null,
+    'input': type === 'button' || type === 'submit' ? 'button' :
+             type === 'checkbox' ? 'checkbox' :
+             type === 'radio' ? 'radio' : 'textbox',
+    'textarea': 'textbox',
+    'select': 'combobox',
+    'h1': 'heading',
+    'h2': 'heading',
+    'h3': 'heading',
+    'h4': 'heading',
+    'h5': 'heading',
+    'h6': 'heading',
+    'img': 'img',
+    'nav': 'navigation',
+    'main': 'main',
+    'header': 'banner',
+    'footer': 'contentinfo',
+    'section': 'region',
+    'article': 'article',
+    'aside': 'complementary',
+    'form': 'form',
+    'table': 'table',
+    'ul': 'list',
+    'ol': 'list',
+    'li': 'listitem'
+  };
+
+  return roleMap[tagName] || null;
+}
+
+function getAccessibleName(element) {
+  if (!element || !element.getAttribute) {
+    return null;
+  }
+
+  try {
+    const ariaLabel = element.getAttribute('aria-label');
+    if (ariaLabel) return ariaLabel;
+
+    const labelledBy = element.getAttribute('aria-labelledby');
+    if (labelledBy && typeof document !== 'undefined') {
+      const labelElement = document.getElementById(labelledBy);
+      if (labelElement) return labelElement.textContent.trim();
+    }
+
+    if (element.tagName && element.tagName.toLowerCase() === 'button') {
+      return element.textContent ? element.textContent.trim() : null;
+    }
+
+    if (element.tagName && element.tagName.toLowerCase() === 'a') {
+      return (element.textContent ? element.textContent.trim() : null) || element.getAttribute('title');
+    }
+
+    if (element.tagName && element.tagName.toLowerCase() === 'img') {
+      return element.getAttribute('alt');
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error getting accessible name:', error);
+    return null;
+  }
+}
+
+function getAssociatedLabel(element) {
+  const id = element.getAttribute('id');
+  if (id) {
+    const label = document.querySelector(`label[for="${id}"]`);
+    if (label) return label.textContent.trim();
+  }
+
+  const parentLabel = element.closest('label');
+  if (parentLabel) {
+    return parentLabel.textContent.trim();
+  }
+
+  return null;
+}
+
+function getUniqueTextContent(element) {
+  const text = element.textContent.trim();
+  if (!text || text.length > 50) return null;
+
+  const elementsWithSameText = document.querySelectorAll(`*:not(script):not(style)`);
+  let count = 0;
+  for (const el of elementsWithSameText) {
+    if (el.textContent.trim() === text) {
+      count++;
+      if (count > 1) return null;
+    }
+  }
+
+  return text;
+}
+
+function generateCSSSelectors(element) {
+  const selectors = [];
+
+  const id = element.getAttribute('id');
+  if (id && /^[a-zA-Z][\w-]*$/.test(id)) {
+    selectors.push({
+      value: `#${id}`,
+      confidence: 'high',
+      description: 'ID selector'
+    });
+  }
+
+  const classes = element.className.split(' ').filter(c => c && /^[a-zA-Z][\w-]*$/.test(c));
+  if (classes.length > 0) {
+    selectors.push({
+      value: `.${classes.join('.')}`,
+      confidence: 'medium',
+      description: 'Class selector'
+    });
+  }
+
+  const name = element.getAttribute('name');
+  if (name) {
+    selectors.push({
+      value: `[name="${name}"]`,
+      confidence: 'medium',
+      description: 'Name attribute'
+    });
+  }
+
+  const tagName = element.tagName.toLowerCase();
+  const type = element.getAttribute('type');
+  if (type) {
+    selectors.push({
+      value: `${tagName}[type="${type}"]`,
+      confidence: 'low',
+      description: 'Tag with type attribute'
+    });
+  }
+
+  return selectors;
+}
+
+function displayPlaywrightLocators() {
+  const container = elements.playwrightLocators;
+
+  if (generatedLocators.length === 0) {
+    container.innerHTML = '<div class="empty-state">No suitable locators found for this element</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+
+  generatedLocators.forEach((locator, index) => {
+    const locatorItem = document.createElement('div');
+    locatorItem.className = 'locator-item';
+    locatorItem.dataset.index = index;
+
+    locatorItem.innerHTML = `
+      <div class="locator-info">
+        <div class="locator-type">${locator.type}</div>
+        <div class="locator-value">${locator.value}</div>
+        <div class="locator-confidence confidence-${locator.confidence}">
+          ${locator.confidence.toUpperCase()} - ${locator.description}
+        </div>
+      </div>
+      <div class="locator-actions">
+        <button class="locator-copy-btn" onclick="copyLocator(${index})">Copy</button>
+      </div>
+    `;
+
+    locatorItem.addEventListener('click', () => selectLocator(index));
+    container.appendChild(locatorItem);
+  });
+}
+
+function selectLocator(index) {
+  selectedLocatorIndex = index;
+
+  // Update visual selection
+  const items = document.querySelectorAll('.locator-item');
+  items.forEach((item, i) => {
+    if (i === index) {
+      item.style.backgroundColor = 'var(--primary-color)';
+      item.style.color = 'white';
+    } else {
+      item.style.backgroundColor = '';
+      item.style.color = '';
+    }
+  });
+
+  updateActionButtons();
+}
+
+function copyLocator(index) {
+  const locator = generatedLocators[index];
+  if (locator) {
+    navigator.clipboard.writeText(locator.value).then(() => {
+      showStatus(`${locator.type} locator copied to clipboard`, 'success');
+    }).catch(() => {
+      showStatus('Failed to copy locator', 'error');
+    });
+  }
+}
+
+function updateActionButtons() {
+  const hasSelection = currentSelectedElement !== null;
+  const hasLocators = generatedLocators.length > 0;
+
+  if (currentLocatorMode === 'xpath') {
+    elements.insertLocatorBtn.disabled = !hasSelection;
+    elements.testLocatorBtn.disabled = !hasSelection;
+    elements.generateSnippetBtn.disabled = true;
+  } else {
+    elements.insertLocatorBtn.disabled = !hasLocators;
+    elements.testLocatorBtn.disabled = !hasLocators;
+    elements.generateSnippetBtn.disabled = !hasLocators;
+  }
+}
+
+function insertLocatorIntoScript() {
+  if (currentLocatorMode === 'xpath') {
+    insertXPathIntoScript();
+  } else {
+    insertPlaywrightLocatorIntoScript();
+  }
+}
+
+function insertXPathIntoScript() {
+  const xpath = elements.xpathValueInput.value;
+  if (xpath && elements.scriptCodeInput) {
+    const currentCode = elements.scriptCodeInput.value;
+    const cursorPos = elements.scriptCodeInput.selectionStart;
+    const xpathCode = `document.evaluate('${xpath}', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue`;
+    const newCode = currentCode.slice(0, cursorPos) + xpathCode + currentCode.slice(cursorPos);
+    elements.scriptCodeInput.value = newCode;
+    elements.scriptCodeInput.focus();
+    elements.scriptCodeInput.setSelectionRange(cursorPos + xpathCode.length, cursorPos + xpathCode.length);
+    showStatus('XPath inserted into script', 'success');
+  }
+}
+
+function insertPlaywrightLocatorIntoScript() {
+  if (generatedLocators.length === 0) {
+    showStatus('No locators available to insert', 'error');
+    return;
+  }
+
+  const locator = generatedLocators[selectedLocatorIndex];
+  const locatorText = locator.value;
+
+  if (elements.scriptCodeInput) {
+    const currentCode = elements.scriptCodeInput.value;
+    const cursorPos = elements.scriptCodeInput.selectionStart;
+    const newCode = currentCode.slice(0, cursorPos) + locatorText + currentCode.slice(cursorPos);
+    elements.scriptCodeInput.value = newCode;
+    elements.scriptCodeInput.focus();
+    elements.scriptCodeInput.setSelectionRange(cursorPos + locatorText.length, cursorPos + locatorText.length);
+    showStatus('Playwright locator inserted into script', 'success');
+  }
+}
+
+function testCurrentLocator() {
+  if (currentLocatorMode === 'xpath') {
+    testXPath();
+  } else {
+    testPlaywrightLocator();
+  }
+}
+
+function testXPath() {
+  const xpath = elements.xpathValueInput.value;
+  if (!xpath) {
+    showStatus('No XPath to test', 'error');
+    return;
+  }
+
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    chrome.tabs.sendMessage(tabs[0].id, {
+      action: 'testXPath',
+      xpath: xpath
+    }, (response) => {
+      if (chrome.runtime.lastError) {
+        showStatus('Error testing XPath', 'error');
+        return;
+      }
+
+      if (response && response.success) {
+        showStatus(`XPath found ${response.count} element(s)`, 'success');
+      } else {
+        showStatus('XPath test failed', 'error');
+      }
+    });
+  });
+}
+
+function testPlaywrightLocator() {
+  if (generatedLocators.length === 0) {
+    showStatus('No locators available to test', 'error');
+    return;
+  }
+
+  const locator = generatedLocators[selectedLocatorIndex];
+
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    chrome.tabs.sendMessage(tabs[0].id, {
+      action: 'testPlaywrightLocator',
+      locator: locator
+    }, (response) => {
+      if (chrome.runtime.lastError) {
+        showStatus('Error testing locator', 'error');
+        return;
+      }
+
+      if (response && response.success) {
+        showStatus(`Locator found ${response.count} element(s)`, 'success');
+      } else {
+        showStatus('Locator test failed', 'error');
+      }
+    });
+  });
+}
+
+function generateCodeSnippet() {
+  if (generatedLocators.length === 0) {
+    showStatus('No locators available for snippet generation', 'error');
+    return;
+  }
+
+  const locator = generatedLocators[selectedLocatorIndex];
+  const snippets = generatePlaywrightSnippets(locator);
+
+  elements.codeSnippet.value = snippets.join('\n\n');
+  elements.snippetSection.classList.remove('hidden');
+  showStatus('Code snippets generated', 'success');
+}
+
+function generatePlaywrightSnippets(locator) {
+  const baseLocator = locator.value;
+
+  return [
+    `// Click action\nawait ${baseLocator}.click();`,
+    `// Fill text (for input elements)\nawait ${baseLocator}.fill('your text here');`,
+    `// Get text content\nconst text = await ${baseLocator}.textContent();`,
+    `// Check if visible\nconst isVisible = await ${baseLocator}.isVisible();`,
+    `// Wait for element\nawait ${baseLocator}.waitFor();`,
+    `// Hover over element\nawait ${baseLocator}.hover();`,
+    `// Get attribute value\nconst value = await ${baseLocator}.getAttribute('attribute-name');`
+  ];
+}
+
+function copyCodeSnippet() {
+  const snippet = elements.codeSnippet.value;
+  if (snippet) {
+    navigator.clipboard.writeText(snippet).then(() => {
+      showStatus('Code snippet copied to clipboard', 'success');
+    }).catch(() => {
+      showStatus('Failed to copy snippet', 'error');
+    });
+  }
+}
+
+// Handle element selection from background script
+function handleElementSelected(xpath, elementInfo, elementData) {
+  console.log('Popup handling element selection:', { xpath, elementInfo, elementData });
+
+  // Reset UI
+  elements.startSelectionBtn.classList.remove('hidden');
+  elements.cancelSelectionBtn.classList.add('hidden');
+
+  // Store the XPath - ensure it's not undefined
+  const selectedXPath = xpath || 'XPath generation failed';
+  console.log('Popup selected XPath:', selectedXPath);
+
+  // Create a mock element object from the element data for Playwright locator generation
+  // Check both elementData and elementInfo for element properties
+  console.log('Popup processing element data:', { elementData, elementInfo });
+
+  const elementSource = elementData || elementInfo || {};
+  console.log('Popup element source selected:', elementSource);
+
+  // More comprehensive validation - check if we have any meaningful element data
+  const hasValidData = elementSource && (
+    elementSource.tagName ||
+    elementSource.id ||
+    elementSource.className ||
+    elementSource.classes ||
+    (elementSource.attributes && Object.keys(elementSource.attributes).length > 0) ||
+    elementSource.textContent
+  );
+
+  console.log('Popup element validation result:', hasValidData);
+  console.log('Popup element source keys:', elementSource ? Object.keys(elementSource) : 'null');
+
+  if (hasValidData) {
+    currentSelectedElement = {
+      tagName: elementSource.tagName || '',
+      id: elementSource.id || '',
+      className: elementSource.className || elementSource.classes || '',
+      textContent: elementSource.textContent || '',
+      attributes: elementSource.attributes || {},
+      outerHTML: elementSource.outerHTML || '',
+      getAttribute: function(name) {
+        console.log(`Popup getAttribute called with: ${name}`);
+        // Check both attributes object and direct properties
+        const result = (this.attributes && this.attributes[name]) ||
+               this[name] ||
+               (name === 'data-testid' && (this.attributes['data-testid'] || this['data-testid'])) ||
+               (name === 'data-test-id' && (this.attributes['data-test-id'] || this['data-test-id'])) ||
+               (name === 'data-cy' && (this.attributes['data-cy'] || this['data-cy'])) ||
+               null;
+        console.log(`Popup getAttribute(${name}) returning:`, result);
+        return result;
+      },
+      // Add methods needed for Playwright locator generation
+      closest: function(selector) {
+        // Mock implementation - in real scenario this would traverse DOM
+        return null;
+      }
+    };
+    console.log('Popup successfully created mock element from:', elementSource);
+    console.log('Popup mock element result:', currentSelectedElement);
+  } else {
+    console.error('Popup: No valid element data found. ElementData:', elementData, 'ElementInfo:', elementInfo);
+
+    // Create a minimal mock element as fallback if we have any data at all
+    if (elementSource && typeof elementSource === 'object') {
+      console.log('Popup creating minimal fallback element');
+      currentSelectedElement = {
+        tagName: elementSource.tagName || 'div',
+        id: elementSource.id || '',
+        className: elementSource.className || elementSource.classes || '',
+        textContent: elementSource.textContent || '',
+        attributes: elementSource.attributes || {},
+        outerHTML: elementSource.outerHTML || '',
+        getAttribute: function(name) {
+          return (this.attributes && this.attributes[name]) || this[name] || null;
+        },
+        closest: function(selector) {
+          return null;
+        }
+      };
+      console.log('Popup fallback element created:', currentSelectedElement);
+    } else {
+      currentSelectedElement = null;
+    }
+  }
+
+  // Update element info display
+  if (elements.elementInfoPanel && elementInfo) {
+    elements.elementInfoPanel.innerHTML = `
+      <div class="element-details">
+        <div><strong>Tag:</strong> ${elementInfo.tagName || 'Unknown'}</div>
+        <div><strong>ID:</strong> ${elementInfo.id || 'None'}</div>
+        <div><strong>Classes:</strong> ${elementInfo.className || elementInfo.classes || 'None'}</div>
+        <div><strong>Text:</strong> ${elementInfo.textContent || 'None'}</div>
+      </div>
+    `;
+    console.log('Popup element info updated:', elementInfo);
+  }
+
+  // Update XPath input
+  console.log('Popup attempting to update XPath input. Element exists:', !!elements.xpathValueInput);
+  if (elements.xpathValueInput) {
+    elements.xpathValueInput.value = selectedXPath;
+    console.log('Popup XPath input updated with:', selectedXPath);
+    console.log('Popup XPath input current value:', elements.xpathValueInput.value);
+  } else {
+    console.error('Popup XPath input element not found. Trying to find it again...');
+    // Try to find the element again
+    const xpathInput = document.getElementById('xpath-value');
+    if (xpathInput) {
+      xpathInput.value = selectedXPath;
+      console.log('Popup XPath input found and updated via fallback');
+      // Update the elements reference
+      elements.xpathValueInput = xpathInput;
+    } else {
+      console.error('Popup XPath input element still not found in DOM');
+    }
+  }
+
+  // Generate Playwright locators if in Playwright mode
+  // Use setTimeout to ensure element processing is complete
+  setTimeout(() => {
+    if (currentLocatorMode === 'playwright' && currentSelectedElement) {
+      console.log('Popup generating Playwright locators for element:', currentSelectedElement);
+      generatePlaywrightLocators(currentSelectedElement);
+    } else {
+      console.log('Popup not generating Playwright locators. Mode:', currentLocatorMode, 'Element:', currentSelectedElement);
+      // Clear any existing locators if not in Playwright mode
+      if (currentLocatorMode !== 'playwright') {
+        generatedLocators = [];
+        if (elements.playwrightLocators) {
+          elements.playwrightLocators.innerHTML = '<div class="empty-state">Switch to Playwright mode to see locators</div>';
+        }
+      }
+    }
+  }, 10);
+
+  // Update action buttons
+  updateActionButtons();
+
+  showStatus('Element selected successfully', 'success');
+}
+
+// Make functions globally available
+window.copyLocator = copyLocator;
+window.selectLocator = selectLocator;
 
 // Initialize settings when tab is shown
 document.addEventListener('DOMContentLoaded', () => {

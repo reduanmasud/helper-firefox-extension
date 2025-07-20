@@ -43,7 +43,8 @@
               <button id="cancel-script-btn" class="text-btn">Cancel</button>
             </div>
           </div>
-          <textarea id="script-code" class="code-editor" placeholder="// Write your JavaScript code here"></textarea>
+          <div id="editor" style="height: 300px;"></div>
+          <textarea id="script-code" class="code-editor hidden" placeholder="// Write your JavaScript code here"></textarea>
         </div>
 
         <div class="script-actions hidden" id="script-actions">
@@ -320,10 +321,10 @@
         </div>
       </div>
 
-      <!-- Inspector Tab (Original Element Selection) -->
+      <!-- Inspector Tab (Enhanced Element Selection) -->
       <div class="tab-content" id="inspector-tab">
         <div class="inspector-section">
-          <h2>Element Selection</h2>
+          <h2>Element Inspector</h2>
           <div class="selection-controls">
             <button id="start-selection-btn" class="primary-btn">Select Element</button>
             <button id="cancel-selection-btn" class="secondary-btn hidden">Cancel Selection</button>
@@ -336,18 +337,55 @@
             </div>
           </div>
 
-          <div class="xpath-section">
-            <h3>XPath</h3>
+          <!-- Locator Type Selector -->
+          <div class="locator-type-section">
+            <h3>Locator Type</h3>
+            <div class="locator-type-controls">
+              <label class="radio-label">
+                <input type="radio" name="locator-type" value="xpath" id="xpath-mode" checked>
+                <span>XPath</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="locator-type" value="playwright" id="playwright-mode">
+                <span>Playwright</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- XPath Section -->
+          <div class="xpath-section" id="xpath-section">
+            <h3>XPath Selector</h3>
             <div class="xpath-display">
               <input type="text" id="xpath-value" readonly>
               <button id="copy-xpath-btn" class="text-btn">Copy</button>
             </div>
           </div>
 
+          <!-- Playwright Section -->
+          <div class="playwright-section hidden" id="playwright-section">
+            <h3>Playwright Locators</h3>
+            <div class="locator-list" id="playwright-locators">
+              <div class="empty-state">Select an element to generate Playwright locators</div>
+            </div>
+          </div>
+
+          <!-- Actions Section -->
           <div class="actions-section">
             <h3>Actions</h3>
-            <button id="insert-xpath-btn" class="primary-btn" disabled>Insert into Script</button>
-            <button id="test-xpath-btn" class="secondary-btn" disabled>Test XPath</button>
+            <div class="action-buttons">
+              <button id="insert-locator-btn" class="primary-btn" disabled>Insert into Script</button>
+              <button id="test-locator-btn" class="secondary-btn" disabled>Test Locator</button>
+              <button id="generate-snippet-btn" class="secondary-btn" disabled>Generate Code Snippet</button>
+            </div>
+          </div>
+
+          <!-- Code Snippet Section -->
+          <div class="snippet-section hidden" id="snippet-section">
+            <h3>Code Snippet</h3>
+            <div class="snippet-display">
+              <textarea id="code-snippet" readonly></textarea>
+              <button id="copy-snippet-btn" class="text-btn">Copy Snippet</button>
+            </div>
           </div>
         </div>
       </div>
@@ -358,6 +396,6 @@
     </footer>
   </div>
 
-  <script src="sidebar.js"></script>
+  <script type="module" src="sidebar.js"></script>
 </body>
 </html>

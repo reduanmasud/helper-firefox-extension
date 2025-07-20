@@ -708,6 +708,176 @@ main {
   text-decoration: underline;
 }
 
+/* Enhanced Inspector Styles */
+.locator-type-section {
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-light);
+}
+
+.locator-type-section h3 {
+  margin: 0 0 8px 0;
+  color: var(--text-color);
+  font-size: 14px;
+}
+
+.locator-type-controls {
+  display: flex;
+  gap: 16px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-color);
+}
+
+.radio-label input[type="radio"] {
+  margin: 0;
+}
+
+.radio-label span {
+  user-select: none;
+}
+
+.playwright-section {
+  margin-bottom: 16px;
+}
+
+.playwright-section h3 {
+  margin: 0 0 12px 0;
+  color: var(--text-color);
+  font-size: 14px;
+}
+
+.locator-list {
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: white;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.locator-item {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.locator-item:last-child {
+  border-bottom: none;
+}
+
+.locator-item:hover {
+  background-color: var(--bg-light);
+}
+
+.locator-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.locator-type {
+  font-size: 10px;
+  font-weight: bold;
+  color: var(--primary-color);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.locator-value {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 11px;
+  color: var(--text-color);
+  word-break: break-all;
+  line-height: 1.3;
+}
+
+.locator-confidence {
+  font-size: 10px;
+  color: var(--text-light);
+  margin-top: 2px;
+}
+
+.confidence-high {
+  color: #22c55e;
+}
+
+.confidence-medium {
+  color: #f59e0b;
+}
+
+.confidence-low {
+  color: #ef4444;
+}
+
+.locator-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.locator-copy-btn {
+  padding: 4px 8px;
+  font-size: 10px;
+  border: 1px solid var(--border-color);
+  background: white;
+  color: var(--text-color);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.locator-copy-btn:hover {
+  background-color: var(--bg-light);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.snippet-section {
+  margin-top: 16px;
+}
+
+.snippet-section h3 {
+  margin: 0 0 8px 0;
+  color: var(--text-color);
+  font-size: 14px;
+}
+
+.snippet-display {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.snippet-display textarea {
+  flex: 1;
+  min-height: 80px;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 11px;
+  resize: vertical;
+  background-color: #f8f9fa;
+}
+
+.snippet-display button {
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
 /* Results Tab */
 .results-container {
   border: 1px solid var(--border-color);
@@ -922,4 +1092,48 @@ footer {
   font-size: 12px;
   color: #737373;
   text-align: center;
+}
+
+
+/* CodeMirror Editor Container */
+#editor {
+  min-height: 150px;          /* Minimum usable height */
+  max-height: 500px;          /* Maximum height before scrolling */
+  height: 300px;              /* Default height */
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;           /* Let CodeMirror handle scrolling */
+  resize: vertical;           /* Allow manual resizing */
+}
+
+/* CodeMirror Editor Styling */
+#editor .cm-editor {
+  height: 100%;
+  font-size: 12px;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+#editor .cm-content {
+  min-height: 100%;
+  padding: 8px;
+}
+
+#editor .cm-focused {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+}
+
+/* Scrollable content when exceeding max-height */
+#editor .cm-scroller {
+  max-height: inherit;
+  overflow-y: auto;
+}
+
+@media (max-width: 400px) {
+  #editor {
+    min-height: 120px;
+    max-height: 300px;
+    height: 200px;
+  }
 }

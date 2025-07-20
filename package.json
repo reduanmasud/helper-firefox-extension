@@ -19,6 +19,11 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "web-ext": "^7.6.2"
+    "esbuild": "^0.25.8",
+    "web-ext": "^8.9.0"
+  },
+  "dependencies": {
+    "@codemirror/lang-javascript": "^6.2.4",
+    "codemirror": "^6.0.2"
   }
 }

@@ -11,25 +11,39 @@ browser.runtime.onInstalled.addListener(async () => {
     results: []
   });
 
-  // Initialize test suite storage
+  // Initialize test suite storage with fallback
   try {
-    // Import test suite storage (we'll need to load it dynamically)
-    const { testSuiteStorage } = await import('../shared/test-suite-storage.js');
-    await testSuiteStorage.initialize();
-    console.log('Test suite storage initialized');
-  } catch (error) {
-    console.error('Failed to initialize test suite storage:', error);
-    // Fallback initialization
-    await browser.storage.local.set({
-      testSuites: [],
-      suiteResults: [],
-      testSuiteSettings: {
+    // Fallback initialization for test suites
+    const existingData = await browser.storage.local.get([
+      'testSuites', 'suiteResults', 'testSuiteSettings'
+    ]);
+
+    const updates = {};
+
+    if (!existingData.testSuites) {
+      updates.testSuites = [];
+    }
+
+    if (!existingData.suiteResults) {
+      updates.suiteResults = [];
+    }
+
+    if (!existingData.testSuiteSettings) {
+      updates.testSuiteSettings = {
         defaultTimeout: 30000,
         maxResultHistory: 50,
         autoScreenshot: false,
         maxSuiteHistory: 10
-      }
-    });
+      };
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await browser.storage.local.set(updates);
+    }
+
+    console.log('Test suite storage initialized');
+  } catch (error) {
+    console.error('Failed to initialize test suite storage:', error);
   }
 });
 
@@ -79,17 +93,50 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   
   // Handle element selected event from content script
   if (message.action === 'elementSelected') {
-    // Forward the message to both the popup and sidebar if they're open
-    browser.runtime.sendMessage(message)
-      .catch(error => {
-        // Popup or sidebar might be closed, which is expected
-        console.log('Could not forward element selection to popup/sidebar (might be closed)');
+    console.log('Background received elementSelected:', message);
+
+    // Store the element data temporarily for popup/sidebar access
+    browser.storage.local.set({
+      lastSelectedElement: {
+        xpath: message.xpath,
+        elementInfo: message.elementInfo,
+        elementData: message.elementData,
+        timestamp: Date.now()
+      }
+    }).then(() => {
+      console.log('Element data stored successfully');
+
+      // Try to forward to popup/sidebar
+      return browser.runtime.sendMessage({
+        action: 'elementSelectedUpdate',
+        xpath: message.xpath,
+        elementInfo: message.elementInfo,
+        elementData: message.elementData
       });
-    
+    }).catch(error => {
+      // Popup or sidebar might be closed, which is expected
+      console.log('Could not forward element selection to popup/sidebar (might be closed):', error);
+    });
+
     sendResponse({ success: true });
     return true;
   }
-  
+
+  // Handle element selection cancelled event from content script
+  if (message.action === 'elementSelectionCancelled') {
+    console.log('Background received element selection cancelled');
+
+    // Forward to popup/sidebar
+    browser.runtime.sendMessage({
+      action: 'elementSelectionCancelled'
+    }).catch(error => {
+      console.log('Could not forward cancellation to popup/sidebar (might be closed):', error);
+    });
+
+    sendResponse({ success: true });
+    return true;
+  }
+
   // Handle XPath insertion from sidebar to popup
   if (message.action === 'insertXPathIntoScript') {
     // Forward the XPath to the popup
