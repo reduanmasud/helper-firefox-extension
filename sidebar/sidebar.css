@@ -1137,3 +1137,68 @@ footer {
     height: 200px;
   }
 }
+
+/* CodeMirror Snippet Editor Container */
+.snippet-editor-container {
+  flex: 1;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: #f8f9fa;
+  overflow: hidden;
+}
+
+#snippet-editor {
+  min-height: 80px;
+  max-height: 300px;
+  height: auto;
+}
+
+/* CodeMirror Snippet Editor Styling */
+#snippet-editor .cm-editor {
+  height: 100%;
+  font-size: 11px;
+  font-family: 'Courier New', Courier, monospace;
+  background-color: #f8f9fa;
+}
+
+#snippet-editor .cm-content {
+  padding: 8px;
+  min-height: 80px;
+}
+
+#snippet-editor .cm-focused {
+  outline: none;
+  /* No focus styling for readonly editor */
+}
+
+/* Readonly appearance */
+#snippet-editor .cm-editor.cm-readonly {
+  background-color: #f8f9fa;
+  cursor: default;
+}
+
+#snippet-editor .cm-readonly .cm-content {
+  color: #333;
+}
+
+#snippet-editor .cm-readonly .cm-cursor {
+  display: none; /* Hide cursor in readonly mode */
+}
+
+/* Scrollable content when exceeding max-height */
+#snippet-editor .cm-scroller {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* Remove the old textarea styling */
+.snippet-display textarea {
+  /* This rule can be removed after migration */
+}
+
+.snippet-display {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  flex-direction: row; /* Ensure horizontal layout */
+}

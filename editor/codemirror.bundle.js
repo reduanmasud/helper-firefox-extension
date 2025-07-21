@@ -24514,14 +24514,60 @@ function replaceSelection(text) {
   });
   editorView.dispatch(transaction);
 }
+var snippetEditorView = null;
+function initSnippetEditor(containerId, initialCode = "") {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  if (snippetEditorView) {
+    snippetEditorView.destroy();
+  }
+  snippetEditorView = new EditorView({
+    state: EditorState.create({
+      doc: initialCode,
+      extensions: [
+        basicSetup,
+        javascript(),
+        EditorView.editable.of(false),
+        // Make readonly
+        EditorState.readOnly.of(true)
+        // Additional readonly protection
+      ]
+    }),
+    parent: container
+  });
+}
+function updateSnippetContent(content2) {
+  if (!snippetEditorView) return;
+  const transaction = snippetEditorView.state.update({
+    changes: {
+      from: 0,
+      to: snippetEditorView.state.doc.length,
+      insert: content2
+    }
+  });
+  snippetEditorView.dispatch(transaction);
+}
+function getSnippetContent() {
+  return snippetEditorView ? snippetEditorView.state.doc.toString() : "";
+}
+function destroySnippetEditor() {
+  if (snippetEditorView) {
+    snippetEditorView.destroy();
+    snippetEditorView = null;
+  }
+}
 export {
   destroyEditor,
+  destroySnippetEditor,
   focusEditor,
   getCodeValue,
   getCursorPosition,
   getSelectedText,
+  getSnippetContent,
   initCodeEditor,
+  initSnippetEditor,
   insertTextAtCursor,
   replaceSelection,
-  setCursorPosition
+  setCursorPosition,
+  updateSnippetContent
 };

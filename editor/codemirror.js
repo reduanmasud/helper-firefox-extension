@@ -91,3 +91,56 @@ export function replaceSelection(text) {
 
     editorView.dispatch(transaction);
 }
+
+
+// Snippet Editor
+// Global variable for snippet editor
+let snippetEditorView = null;
+
+export function initSnippetEditor(containerId, initialCode = '') {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    // Destroy old instance
+    if (snippetEditorView) {
+        snippetEditorView.destroy();
+    }
+
+    snippetEditorView = new EditorView({
+        state: EditorState.create({
+            doc: initialCode,
+            extensions: [
+                basicSetup,
+                javascript(),
+                EditorView.editable.of(false), // Make readonly
+                EditorState.readOnly.of(true)  // Additional readonly protection
+            ]
+        }),
+        parent: container
+    });
+}
+
+export function updateSnippetContent(content) {
+    if (!snippetEditorView) return;
+    
+    const transaction = snippetEditorView.state.update({
+        changes: {
+            from: 0,
+            to: snippetEditorView.state.doc.length,
+            insert: content
+        }
+    });
+    
+    snippetEditorView.dispatch(transaction);
+}
+
+export function getSnippetContent() {
+    return snippetEditorView ? snippetEditorView.state.doc.toString() : '';
+}
+
+export function destroySnippetEditor() {
+    if (snippetEditorView) {
+        snippetEditorView.destroy();
+        snippetEditorView = null;
+    }
+}

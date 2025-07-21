@@ -5,7 +5,11 @@ import {
   insertTextAtCursor,
   getCursorPosition,
   setCursorPosition,
-  focusEditor 
+  focusEditor,
+  initSnippetEditor,
+  updateSnippetContent,
+  getSnippetContent,
+  destroySnippetEditor
 } from '../editor/codemirror.bundle.js';
 
 // Global state
@@ -141,7 +145,9 @@ const elements = {
 
   // Code Snippet
   snippetSection: document.getElementById('snippet-section'),
-  codeSnippet: document.getElementById('code-snippet'),
+  // codeSnippet: document.getElementById('code-snippet'),
+  // copySnippetBtn: document.getElementById('copy-snippet-btn'),
+  snippetEditor: document.getElementById('snippet-editor'),
   copySnippetBtn: document.getElementById('copy-snippet-btn'),
 
   // Status
@@ -158,6 +164,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize Inspector tab
   console.log('Initializing Inspector tab...');
+
+  if (elements.snippetEditor) {
+    initSnippetEditor('snippet-editor', '// Code snippets will appear here');
+  }
+
+  // With this safer version:
+  if (elements.snippetEditor) {
+    try {
+      initSnippetEditor('snippet-editor', '// Code snippets will appear here');
+      console.log('Snippet editor initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize snippet editor:', error);
+      // Fallback: hide the snippet section if CodeMirror fails
+      elements.snippetSection.style.display = 'none';
+    }
+  }
+  
 
   // Check if Inspector elements exist
   const inspectorElements = {
@@ -2656,7 +2679,7 @@ function insertPlaywrightLocatorIntoScript() {
 
   const locator = generatedLocators[selectedLocatorIndex];
   const locatorText = locator.value;
-  
+
   insertTextAtCursor(locatorText);
   showStatus('Playwright locator inserted into script');
 
@@ -2718,10 +2741,17 @@ function generateCodeSnippet() {
 
   const locator = generatedLocators[selectedLocatorIndex];
   const snippets = generatePlaywrightSnippets(locator);
+  const snippetContent = snippets.join('\n\n');
 
-  elements.codeSnippet.value = snippets.join('\n\n');
-  elements.snippetSection.classList.remove('hidden');
-  showStatus('Code snippets generated');
+  try {
+    // Update CodeMirror editor instead of textarea
+    updateSnippetContent(snippetContent);
+    elements.snippetSection.classList.remove('hidden');
+    showStatus('Code snippets generated');
+  } catch (error) {
+    console.error('Failed to update snippet content:', error);
+    showStatus('Error generating code snippet', true);
+  }
 }
 
 function generatePlaywrightSnippets(locator) {
@@ -2738,14 +2768,22 @@ function generatePlaywrightSnippets(locator) {
   ];
 }
 
+// Replace the existing copyCodeSnippet function
 function copyCodeSnippet() {
-  const snippet = elements.codeSnippet.value;
-  if (snippet) {
-    navigator.clipboard.writeText(snippet).then(() => {
-      showStatus('Code snippet copied to clipboard');
-    }).catch(() => {
-      showStatus('Failed to copy snippet', true);
-    });
+  try {
+    const snippet = getSnippetContent(); // Use CodeMirror API instead of textarea.value
+    if (snippet) {
+      navigator.clipboard.writeText(snippet).then(() => {
+        showStatus('Code snippet copied to clipboard');
+      }).catch(() => {
+        showStatus('Failed to copy snippet', true);
+      });
+    } else {
+      showStatus('No snippet content to copy', true);
+    }
+  } catch (error) {
+    console.error('Failed to get snippet content:', error);
+    showStatus('Error accessing snippet content', true);
   }
 }
 
