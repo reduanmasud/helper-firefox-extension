@@ -885,7 +885,8 @@ function resetSelectionButtons() {
 function handleMessages(message) {
   console.log('Sidebar received message:', message);
 
-  if (message.action === 'elementSelected' || message.action === 'elementSelectedUpdate') {
+  // message.action === 'elementSelected' || 
+  if (message.action === 'elementSelectedUpdate') {
     handleElementSelected(message.xpath, message.elementInfo, message.elementData);
   } else if (message.action === 'contentExtracted') {
     if (elements.extractedContent) {
