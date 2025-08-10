@@ -225,8 +225,9 @@ function prepareConsoleForExecution(tabId) {
           console.clear();
           console.log('%c🚀 Console Script Manager - Script Execution', 'color: #4f46e5; font-weight: bold; font-size: 18px; padding: 8px; background: linear-gradient(45deg, #4f46e5, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent;');
           console.log('%c' + '='.repeat(60), 'color: #4f46e5;');
-          console.log('%c📍 Switched to this tab automatically!', 'color: #f59e0b; font-weight: 500; font-size: 14px;');
-          console.log('%cDeveloper Console opened! Script output will appear below.', 'color: #22c55e; font-weight: 500; font-size: 14px;');
+          console.log('%c📍 Browser tab activated automatically!', 'color: #f59e0b; font-weight: 500; font-size: 14px;');
+          console.log('%c⚠️  IMPORTANT: Click the "Console" tab in Developer Tools to see script output', 'color: #dc2626; font-weight: bold; font-size: 14px; background: #fef2f2; padding: 4px;');
+          console.log('%c   (Extension cannot switch Developer Tools tabs automatically)', 'color: #6b7280; font-style: italic; font-size: 12px;');
           console.log('%cTime: ' + new Date().toLocaleString(), 'color: #6b7280; font-style: italic;');
           console.log('%c' + '='.repeat(60), 'color: #4f46e5;');
 
@@ -242,21 +243,33 @@ function prepareConsoleForExecution(tabId) {
 
           var indicator = document.createElement('div');
           indicator.id = 'console-script-manager-indicator';
-          indicator.innerHTML = '🚀 Tab switched! Console opened! Check Developer Tools below ↓';
+          indicator.innerHTML = \`
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+              <span style="font-size: 20px;">🚀</span>
+              <span style="font-weight: bold;">Script Executed!</span>
+            </div>
+            <div style="font-size: 13px; line-height: 1.4;">
+              <div style="margin-bottom: 4px;">✅ Browser tab activated</div>
+              <div style="margin-bottom: 4px;">⚠️ <strong>Click "Console" tab in Developer Tools</strong></div>
+              <div style="color: rgba(255,255,255,0.8); font-size: 11px;">Extension cannot switch DevTools tabs automatically</div>
+            </div>
+          \`;
           indicator.style.cssText = \`
           position: fixed;
-          bottom: 20px;
+          top: 20px;
           right: 20px;
-          background: linear-gradient(135deg, #4f46e5, #7c3aed);
+          background: linear-gradient(135deg, #dc2626, #b91c1c);
           color: white;
-          padding: 12px 16px;
-          border-radius: 8px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          padding: 16px 20px;
+          border-radius: 12px;
+          box-shadow: 0 8px 24px rgba(220, 38, 38, 0.3);
           z-index: 10000;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           font-size: 14px;
           font-weight: 500;
-          animation: slideUp 0.3s ease-out;
+          max-width: 320px;
+          animation: slideIn 0.4s ease-out;
+          border: 2px solid rgba(255, 255, 255, 0.2);
         \`;
 
           // Add animation styles (remove existing first)
@@ -268,27 +281,27 @@ function prepareConsoleForExecution(tabId) {
           var style = document.createElement('style');
           style.id = 'console-script-manager-styles';
           style.textContent = \`
-            @keyframes slideUp {
-              from { transform: translateY(100%); opacity: 0; }
-              to { transform: translateY(0); opacity: 1; }
+            @keyframes slideIn {
+              from { transform: translateX(100%); opacity: 0; }
+              to { transform: translateX(0); opacity: 1; }
             }
-            @keyframes slideDown {
-              from { transform: translateY(0); opacity: 1; }
-              to { transform: translateY(100%); opacity: 0; }
+            @keyframes slideOut {
+              from { transform: translateX(0); opacity: 1; }
+              to { transform: translateX(100%); opacity: 0; }
             }
           \`;
           document.head.appendChild(style);
           document.body.appendChild(indicator);
 
-          // Remove indicator after 3 seconds
+          // Remove indicator after 5 seconds (longer for important message)
           setTimeout(function() {
-            indicator.style.animation = 'slideDown 0.3s ease-in forwards';
+            indicator.style.animation = 'slideOut 0.4s ease-in forwards';
             setTimeout(function() {
               if (indicator && indicator.parentNode) {
                 indicator.remove();
               }
-            }, 300);
-          }, 3000);
+            }, 400);
+          }, 5000);
         })();
       `
     }, () => {

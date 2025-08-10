@@ -662,8 +662,8 @@ function runCurrentScript() {
             result.output.substring(0, 100) + '...' :
             result.output;
           const statusMsg = result.success ?
-            `✅ Script "${script.name}" executed successfully! Check browser console for detailed output.` :
-            `❌ Script "${script.name}" failed: ${outputPreview}. Check browser console for details.`;
+            `✅ Script "${script.name}" executed! Click "Console" tab in Developer Tools to see output.` :
+            `❌ Script "${script.name}" failed: ${outputPreview}. Click "Console" tab in Developer Tools for details.`;
           showStatus(statusMsg, !result.success);
 
           // Log full output to console for debugging
@@ -1237,7 +1237,7 @@ function openBrowserConsole() {
   browser.runtime.sendMessage({
     action: 'openConsole'
   }).then(() => {
-    showStatus('✅ Console is prepared and ready! Press F12 to open Developer Tools.');
+    showStatus('✅ Console prepared! Press F12, then click "Console" tab in Developer Tools.');
   }).catch(error => {
     console.error('Error opening console:', error);
     showStatus('❌ Could not prepare console. Press F12 manually to open Developer Tools.', true);
