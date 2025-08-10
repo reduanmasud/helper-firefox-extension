@@ -96,6 +96,22 @@ h3 {
   background-color: rgba(79, 70, 229, 0.1);
 }
 
+/* Beta badge for Inspector tab */
+.beta-badge {
+  display: inline-block;
+  background-color: #ff6b35;
+  color: white;
+  font-size: 9px;
+  font-weight: bold;
+  padding: 2px 4px;
+  border-radius: 3px;
+  margin-left: 4px;
+  vertical-align: top;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 /* Main Content */
 main {
   flex: 1;
@@ -1360,6 +1376,12 @@ footer {
   .tab-btn {
     font-size: 11px;
     padding: 4px 8px;
+  }
+
+  .beta-badge {
+    font-size: 8px;
+    padding: 1px 3px;
+    margin-left: 2px;
   }
 }
 
