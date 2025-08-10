@@ -1948,125 +1948,28 @@ function resetInspectionButton() {
   elements.inspectElementBtn.disabled = false;
 }
 
-// Lightweight markdown renderer for analysis results
+// Enhanced markdown renderer using marked.js library with XSS protection
 function renderMarkdown(text) {
+  // Use the bundled MarkdownRenderer if available
+  if (typeof window !== 'undefined' && window.MarkdownRenderer && window.MarkdownRenderer.renderMarkdown) {
+    return window.MarkdownRenderer.renderMarkdown(text);
+  }
+
+  // Fallback to basic text processing if library is not available
+  console.warn('MarkdownRenderer library not available, using fallback');
   if (!text || typeof text !== 'string') {
-    return text;
+    return text || '';
   }
 
-  // Split into lines for better processing
-  const lines = text.split('\n');
-  const processedLines = [];
-  let inCodeBlock = false;
-  let inList = false;
-  let listType = '';
-
-  for (let i = 0; i < lines.length; i++) {
-    let line = lines[i];
-
-    // Handle code blocks
-    if (line.startsWith('```')) {
-      if (!inCodeBlock) {
-        const language = line.substring(3).trim();
-        processedLines.push(`<pre><code${language ? ` class="language-${language}"` : ''}>`);
-        inCodeBlock = true;
-      } else {
-        processedLines.push('</code></pre>');
-        inCodeBlock = false;
-      }
-      continue;
-    }
-
-    if (inCodeBlock) {
-      // Escape HTML in code blocks
-      line = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      processedLines.push(line);
-      continue;
-    }
-
-    // Handle lists
-    const isUnorderedList = /^[\*\-] (.+)/.test(line);
-    const isOrderedList = /^\d+\. (.+)/.test(line);
-    const isListItem = isUnorderedList || isOrderedList;
-
-    if (isListItem) {
-      const currentListType = isOrderedList ? 'ol' : 'ul';
-
-      if (!inList) {
-        processedLines.push(`<${currentListType}>`);
-        inList = true;
-        listType = currentListType;
-      } else if (listType !== currentListType) {
-        processedLines.push(`</${listType}>`);
-        processedLines.push(`<${currentListType}>`);
-        listType = currentListType;
-      }
-
-      const content = line.replace(/^[\*\-] (.+)/, '$1').replace(/^\d+\. (.+)/, '$1');
-      processedLines.push(`<li>${processInlineMarkdown(content)}</li>`);
-    } else {
-      if (inList) {
-        processedLines.push(`</${listType}>`);
-        inList = false;
-        listType = '';
-      }
-
-      // Process other elements
-      if (line.trim() === '') {
-        processedLines.push('');
-      } else if (line.startsWith('### ')) {
-        processedLines.push(`<h3>${processInlineMarkdown(line.substring(4))}</h3>`);
-      } else if (line.startsWith('## ')) {
-        processedLines.push(`<h2>${processInlineMarkdown(line.substring(3))}</h2>`);
-      } else if (line.startsWith('# ')) {
-        processedLines.push(`<h1>${processInlineMarkdown(line.substring(2))}</h1>`);
-      } else {
-        processedLines.push(processInlineMarkdown(line));
-      }
-    }
-  }
-
-  // Close any open list
-  if (inList) {
-    processedLines.push(`</${listType}>`);
-  }
-
-  // Join lines and handle paragraphs
-  let html = processedLines.join('\n');
-
-  // Convert double line breaks to paragraph breaks
-  html = html.replace(/\n\n+/g, '</p><p>');
-
-  // Wrap content in paragraphs if needed
-  if (!html.startsWith('<h') && !html.startsWith('<p') && !html.startsWith('<pre') && !html.startsWith('<ul') && !html.startsWith('<ol')) {
-    html = '<p>' + html + '</p>';
-  }
-
-  // Clean up empty paragraphs
-  html = html.replace(/<p><\/p>/g, '');
-
-  return html;
-}
-
-// Process inline markdown elements
-function processInlineMarkdown(text) {
+  // Basic fallback processing
   return text
-    // Escape HTML
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-
-    // Inline code (must come before bold/italic)
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-
-    // Bold and italic (order matters)
-    .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-
-    // Links
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    .replace(/\n/g, '<br>');
 }
+
+
 
 // Handle preset instruction selection
 function handlePresetSelection() {
