@@ -47,6 +47,7 @@ const elements = {
   editScriptBtn: document.getElementById('edit-script-btn'),
   deleteScriptBtn: document.getElementById('delete-script-btn'),
   runScriptBtn: document.getElementById('run-script-btn'),
+  openConsoleBtn: document.getElementById('open-console-btn'),
   scriptNameInput: document.getElementById('script-name'),
   scriptCodeInput: document.getElementById('script-code'),
   selectElementBtn: document.getElementById('select-element-btn'),
@@ -273,6 +274,7 @@ function setupEventListeners() {
   elements.editScriptBtn.addEventListener('click', editCurrentScript);
   elements.deleteScriptBtn.addEventListener('click', deleteCurrentScript);
   elements.runScriptBtn.addEventListener('click', runCurrentScript);
+  elements.openConsoleBtn.addEventListener('click', openBrowserConsole);
   elements.selectElementBtn.addEventListener('click', startElementSelection);
   elements.clearResultDisplayBtn.addEventListener('click', clearResultDisplay);
 
@@ -619,6 +621,9 @@ function runCurrentScript() {
   const script = state.scripts.find(s => s.id === state.currentScriptId);
   if (!script) return;
 
+  // Show initial status
+  showStatus(`🚀 Running "${script.name}"...`);
+
   // Process script code to replace variable placeholders
   let processedCode = script.code;
   state.variables.forEach(variable => {
@@ -626,13 +631,12 @@ function runCurrentScript() {
     processedCode = processedCode.replace(placeholder, variable.value);
   });
 
-  // Send script to content script for execution
-  browser.tabs.query({ active: true, currentWindow: true })
-    .then(tabs => {
-      browser.tabs.sendMessage(tabs[0].id, {
-        action: 'runScript',
-        code: processedCode
-      })
+  // Send script to background script for execution (which will handle console opening)
+  browser.runtime.sendMessage({
+    action: 'runScript',
+    code: processedCode,
+    scriptName: script.name
+  })
         .then(result => {
           // Add result to results list
           const newResult = {
@@ -658,8 +662,8 @@ function runCurrentScript() {
             result.output.substring(0, 100) + '...' :
             result.output;
           const statusMsg = result.success ?
-            `✅ Script "${script.name}" executed successfully${outputPreview ? ': ' + outputPreview : ''}` :
-            `❌ Script "${script.name}" failed: ${outputPreview}`;
+            `✅ Script "${script.name}" executed successfully! Check browser console for detailed output.` :
+            `❌ Script "${script.name}" failed: ${outputPreview}. Check browser console for details.`;
           showStatus(statusMsg, !result.success);
 
           // Log full output to console for debugging
@@ -668,7 +672,6 @@ function runCurrentScript() {
         .catch(error => {
           showStatus(`Error executing script: ${error.message}`, true);
         });
-    });
 }
 
 // Results Tab Functions
@@ -1224,6 +1227,24 @@ function clearResultDisplay() {
 }
 
 /**
+ * Open browser console manually
+ */
+function openBrowserConsole() {
+  // Show initial status
+  showStatus('🔧 Preparing console...');
+
+  // Send message to background script to prepare console
+  browser.runtime.sendMessage({
+    action: 'openConsole'
+  }).then(() => {
+    showStatus('✅ Console is prepared and ready! Press F12 to open Developer Tools.');
+  }).catch(error => {
+    console.error('Error opening console:', error);
+    showStatus('❌ Could not prepare console. Press F12 manually to open Developer Tools.', true);
+  });
+}
+
+/**
  * Show a status message
  */
 function showStatus(message, isError = false) {
@@ -1574,11 +1595,11 @@ async function runTestSuite(suiteId) {
               processedCode = processedCode.replace(placeholder, variable.value);
             });
 
-            // Execute script
-            const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-            const result = await browser.tabs.sendMessage(tabs[0].id, {
+            // Execute script via background script (which will handle console opening)
+            const result = await browser.runtime.sendMessage({
               action: 'runScript',
-              code: processedCode
+              code: processedCode,
+              scriptName: script.name
             });
 
             const testCaseResult = {

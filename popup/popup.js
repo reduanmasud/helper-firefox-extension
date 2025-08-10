@@ -234,6 +234,7 @@ const elements = {
   runScriptBtn: document.getElementById('run-script-btn'),
   editScriptBtn: document.getElementById('edit-script-btn'),
   deleteScriptBtn: document.getElementById('delete-script-btn'),
+  openConsoleBtn: document.getElementById('open-console-btn'),
   scriptNameInput: document.getElementById('script-name'),
   scriptCodeInput: document.getElementById('script-code'),
   scriptResultDisplay: document.getElementById('script-result-display'),
@@ -406,6 +407,7 @@ function setupEventListeners() {
   elements.runScriptBtn.addEventListener('click', runCurrentScript);
   elements.editScriptBtn.addEventListener('click', editCurrentScript);
   elements.deleteScriptBtn.addEventListener('click', deleteCurrentScript);
+  elements.openConsoleBtn.addEventListener('click', openBrowserConsole);
   elements.clearResultDisplayBtn.addEventListener('click', clearResultDisplay);
   
   // Variables Tab
@@ -587,24 +589,26 @@ function startElementSelection() {
 
 function runCurrentScript() {
   if (!state.currentScriptId) return;
-  
+
   const script = state.scripts.find(s => s.id === state.currentScriptId);
   if (!script) return;
-  
+
+  // Show initial status
+  showStatus(`🚀 Running "${script.name}"...`, 'info');
+
   // Process script code to replace variable placeholders
   let processedCode = script.code;
   state.variables.forEach(variable => {
     const placeholder = new RegExp(`\\$\\{${variable.name}\\}`, 'g');
     processedCode = processedCode.replace(placeholder, variable.value);
   });
-  
-  // Send script to content script for execution
-  browser.tabs.query({ active: true, currentWindow: true })
-    .then(tabs => {
-      browser.tabs.sendMessage(tabs[0].id, {
-        action: 'runScript',
-        code: processedCode
-      })
+
+  // Send script to background script for execution (which will handle console opening)
+  browser.runtime.sendMessage({
+    action: 'runScript',
+    code: processedCode,
+    scriptName: script.name
+  })
         .then(result => {
           // Add result to results list
           const newResult = {
@@ -630,8 +634,8 @@ function runCurrentScript() {
             result.output.substring(0, 100) + '...' :
             result.output;
           const statusMsg = result.success ?
-            `✅ Script "${script.name}" executed successfully${outputPreview ? ': ' + outputPreview : ''}` :
-            `❌ Script "${script.name}" failed: ${outputPreview}`;
+            `✅ Script "${script.name}" executed successfully! Check browser console for detailed output.` :
+            `❌ Script "${script.name}" failed: ${outputPreview}. Check browser console for details.`;
           showStatus(statusMsg, result.success ? 'success' : 'error');
 
           // Log full output to console for debugging
@@ -640,7 +644,6 @@ function runCurrentScript() {
         .catch(error => {
           showStatus(`Error executing script: ${error.message}`, 'error');
         });
-    });
 }
 
 // Variables Tab Functions
@@ -1021,6 +1024,24 @@ function clearResultDisplay() {
     elements.scriptResultContent.innerHTML = '';
     elements.scriptResultDisplay.classList.add('hidden');
   }
+}
+
+/**
+ * Open browser console manually
+ */
+function openBrowserConsole() {
+  // Show initial status
+  showStatus('🔧 Preparing console...', 'info');
+
+  // Send message to background script to prepare console
+  browser.runtime.sendMessage({
+    action: 'openConsole'
+  }).then(() => {
+    showStatus('✅ Console is prepared and ready! Press F12 to open Developer Tools.', 'success');
+  }).catch(error => {
+    console.error('Error opening console:', error);
+    showStatus('❌ Could not prepare console. Press F12 manually to open Developer Tools.', 'error');
+  });
 }
 
 function showStatus(message, type = 'info') {

@@ -296,18 +296,12 @@ class TestSuiteExecutor {
         processedCode = processedCode.replace(placeholder, variable.value);
       });
 
-      // Send script to content script for execution
-      browser.tabs.query({ active: true, currentWindow: true })
-        .then(tabs => {
-          if (tabs.length === 0) {
-            throw new Error('No active tab found');
-          }
-
-          return browser.tabs.sendMessage(tabs[0].id, {
-            action: 'runScript',
-            code: processedCode
-          });
-        })
+      // Send script to background script for execution (which will handle console opening)
+      browser.runtime.sendMessage({
+        action: 'runScript',
+        code: processedCode,
+        scriptName: script.name || 'Test Script'
+      })
         .then(result => {
           clearTimeout(timeoutId);
           resolve(result);

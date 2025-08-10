@@ -5,6 +5,8 @@ let isSelectingElement = false;
 let highlightedElement = null;
 let highlightOverlay = null;
 
+
+
 // Listen for messages from popup or background script
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
@@ -31,8 +33,8 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'runScript') {
     try {
       // Execute the script in the page context
-      const result = executeScript(message.code);
-      sendResponse({ success: true, output: result });
+      const result = executeScript(message.code, message.scriptName);
+      sendResponse(result);
     } catch (error) {
       sendResponse({ success: false, output: error.toString() });
     }
@@ -482,8 +484,15 @@ function testXPath(xpath) {
 }
 
 // Execute script in page context
-function executeScript(code) {
+function executeScript(code, scriptName = 'Unnamed Script') {
   try {
+    // Add a clear separator and header in console
+    console.log('\n' + '='.repeat(60));
+    console.log('%c📝 SCRIPT EXECUTION', 'color: #4f46e5; font-weight: bold; font-size: 16px;');
+    console.log('Script Name:', scriptName);
+    console.log('Time:', new Date().toLocaleString());
+    console.log('='.repeat(60));
+
     // First inject the assertion library if not already present
     if (!window.assert) {
       injectAssertionLibrary();
@@ -636,13 +645,32 @@ function executeScript(code) {
       (assertionSummary.failed === 0) :
       !output.includes('ERROR:');
 
+    // Add footer to console
+    console.log('='.repeat(60));
+    if (success) {
+      console.log('%c✅ SCRIPT EXECUTION COMPLETED', 'color: #22c55e; font-weight: bold;');
+      console.log('%cStatus: ✅ Success', 'color: #22c55e; font-weight: 500;');
+    } else {
+      console.log('%c❌ SCRIPT EXECUTION FAILED', 'color: #dc2626; font-weight: bold;');
+      console.log('%cStatus: ❌ Failed', 'color: #dc2626; font-weight: 500;');
+    }
+    if (assertionSummary && assertionSummary.total > 0) {
+      console.log(`%cAssertions: ${assertionSummary.passed}/${assertionSummary.total} passed`, 'color: #6b7280;');
+    }
+    console.log('='.repeat(60) + '\n');
+
     return {
       success,
       output: output || 'Script executed successfully (no output)',
       assertions: assertionSummary
     };
   } catch (error) {
-    console.error('Script execution error:', error);
+    console.log('='.repeat(60));
+    console.log('%c❌ SCRIPT EXECUTION FAILED', 'color: #dc2626; font-weight: bold;');
+    console.log('%cStatus: ❌ Error', 'color: #dc2626; font-weight: 500;');
+    console.error('%cError Details:', 'color: #dc2626; font-weight: 500;', error);
+    console.log('='.repeat(60) + '\n');
+
     return {
       success: false,
       output: `Error: ${error.message}`,
