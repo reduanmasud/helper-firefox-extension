@@ -15,7 +15,7 @@
         <button class="tab-btn" data-tab="variables">Variables</button>
         <button class="tab-btn" data-tab="test-suites">Test Suites</button>
         <button class="tab-btn" data-tab="analyzer">Analyzer</button>
-        <button class="tab-btn" data-tab="results">Results</button>
+        <!-- <button class="tab-btn" data-tab="results">Results</button> -->
         <button class="tab-btn" data-tab="inspector">Inspector</button>
         <button class="tab-btn" data-tab="settings">Settings</button>
       </div>
@@ -48,8 +48,18 @@
 
         <div class="script-actions hidden" id="script-actions">
           <button id="run-script-btn" class="primary-btn">Run Script</button>
+          <button id="open-console-btn" class="secondary-btn" title="Open Browser Console (F12)">🔧 Console</button>
           <button id="edit-script-btn" class="secondary-btn">Edit</button>
           <button id="delete-script-btn" class="danger-btn">Delete</button>
+        </div>
+
+        <!-- Script Execution Result Display -->
+        <div class="script-result-display hidden" id="script-result-display">
+          <h3>Last Execution Result</h3>
+          <div class="result-content" id="script-result-content">
+            <!-- Result will be displayed here -->
+          </div>
+          <button id="clear-result-display-btn" class="text-btn">Clear</button>
         </div>
       </div>
 
@@ -356,16 +366,7 @@
             <label for="openrouter-api-key">OpenRouter API Key:</label>
             <input type="password" id="openrouter-api-key" class="api-key-input" placeholder="Enter your OpenRouter API key">
             <label for="openrouter-model">OpenRouter Model:</label>
-            <select id="openrouter-model" class="model-select">
-              <option value="anthropic/claude-3-haiku">Claude 3 Haiku (Fast & Affordable)</option>
-              <option value="anthropic/claude-3-sonnet">Claude 3 Sonnet (Balanced)</option>
-              <option value="anthropic/claude-3-opus">Claude 3 Opus (Most Capable)</option>
-              <option value="openai/gpt-3.5-turbo">GPT-3.5 Turbo</option>
-              <option value="openai/gpt-4">GPT-4</option>
-              <option value="openai/gpt-4-turbo">GPT-4 Turbo</option>
-              <option value="meta-llama/llama-2-70b-chat">Llama 2 70B</option>
-              <option value="mistralai/mixtral-8x7b-instruct">Mixtral 8x7B</option>
-            </select>
+            <input type="text" id="openrouter-model" class="model-input" placeholder="e.g., anthropic/claude-3-haiku, openai/gpt-4, etc.">
             <div class="api-key-actions">
               <button id="save-openrouter-key-btn" class="secondary-btn">Save</button>
               <button id="clear-openrouter-key-btn" class="text-btn">Clear</button>

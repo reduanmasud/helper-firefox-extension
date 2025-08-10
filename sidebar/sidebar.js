@@ -47,9 +47,13 @@ const elements = {
   editScriptBtn: document.getElementById('edit-script-btn'),
   deleteScriptBtn: document.getElementById('delete-script-btn'),
   runScriptBtn: document.getElementById('run-script-btn'),
+  openConsoleBtn: document.getElementById('open-console-btn'),
   scriptNameInput: document.getElementById('script-name'),
   scriptCodeInput: document.getElementById('script-code'),
   selectElementBtn: document.getElementById('select-element-btn'),
+  scriptResultDisplay: document.getElementById('script-result-display'),
+  scriptResultContent: document.getElementById('script-result-content'),
+  clearResultDisplayBtn: document.getElementById('clear-result-display-btn'),
 
   // Variables Tab
   variablesList: document.getElementById('variables-list'),
@@ -104,6 +108,7 @@ const elements = {
   inspectElementBtn: document.getElementById('inspect-element-btn'),
   clearContentBtn: document.getElementById('clear-content-btn'),
   extractedContent: document.getElementById('extracted-content'),
+  presetInstructions: document.getElementById('preset-instructions'),
   analysisPrompt: document.getElementById('analysis-prompt'),
   analyzeBtn: document.getElementById('analyze-btn'),
   copyResultsBtn: document.getElementById('copy-results-btn'),
@@ -270,7 +275,9 @@ function setupEventListeners() {
   elements.editScriptBtn.addEventListener('click', editCurrentScript);
   elements.deleteScriptBtn.addEventListener('click', deleteCurrentScript);
   elements.runScriptBtn.addEventListener('click', runCurrentScript);
+  elements.openConsoleBtn.addEventListener('click', openBrowserConsole);
   elements.selectElementBtn.addEventListener('click', startElementSelection);
+  elements.clearResultDisplayBtn.addEventListener('click', clearResultDisplay);
 
   // Variables Tab
   elements.newVariableBtn.addEventListener('click', newVariable);
@@ -297,6 +304,7 @@ function setupEventListeners() {
   // Analyzer Tab
   elements.inspectElementBtn.addEventListener('click', startContentInspection);
   elements.clearContentBtn.addEventListener('click', clearExtractedContent);
+  elements.presetInstructions.addEventListener('change', handlePresetSelection);
   elements.analyzeBtn.addEventListener('click', analyzeContent);
   elements.copyResultsBtn.addEventListener('click', copyAnalysisResults);
 
@@ -615,6 +623,9 @@ function runCurrentScript() {
   const script = state.scripts.find(s => s.id === state.currentScriptId);
   if (!script) return;
 
+  // Show initial status
+  showStatus(`🚀 Running "${script.name}"...`);
+
   // Process script code to replace variable placeholders
   let processedCode = script.code;
   state.variables.forEach(variable => {
@@ -622,13 +633,12 @@ function runCurrentScript() {
     processedCode = processedCode.replace(placeholder, variable.value);
   });
 
-  // Send script to content script for execution
-  browser.tabs.query({ active: true, currentWindow: true })
-    .then(tabs => {
-      browser.tabs.sendMessage(tabs[0].id, {
-        action: 'runScript',
-        code: processedCode
-      })
+  // Send script to background script for execution (which will handle console opening)
+  browser.runtime.sendMessage({
+    action: 'runScript',
+    code: processedCode,
+    scriptName: script.name
+  })
         .then(result => {
           // Add result to results list
           const newResult = {
@@ -645,14 +655,25 @@ function runCurrentScript() {
           }
 
           saveState();
-          renderResultsList();
-          switchTab('results');
-          showStatus(`Script "${script.name}" executed`);
+
+          // Show result in the dedicated display area
+          showScriptResult(script.name, result);
+
+          // Show enhanced status message with output preview
+          const outputPreview = result.output.length > 100 ?
+            result.output.substring(0, 100) + '...' :
+            result.output;
+          const statusMsg = result.success ?
+            `✅ Script "${script.name}" executed! Click "Console" tab in Developer Tools to see output.` :
+            `❌ Script "${script.name}" failed: ${outputPreview}. Click "Console" tab in Developer Tools for details.`;
+          showStatus(statusMsg, !result.success);
+
+          // Log full output to console for debugging
+          console.log(`Script "${script.name}" execution result:`, result);
         })
         .catch(error => {
           showStatus(`Error executing script: ${error.message}`, true);
         });
-    });
 }
 
 // Results Tab Functions
@@ -1173,17 +1194,82 @@ function testXPath() {
 }
 
 /**
+ * Show script execution result in the dedicated display area
+ */
+function showScriptResult(scriptName, result) {
+  if (!elements.scriptResultDisplay || !elements.scriptResultContent) return;
+
+  const timestamp = new Date().toLocaleString();
+  const statusClass = result.success ? 'result-success' : 'result-error';
+  const statusIcon = result.success ? '✅' : '❌';
+
+  elements.scriptResultContent.innerHTML = `
+    <div class="result-header">
+      <span class="result-status ${statusClass}">${statusIcon} ${result.success ? 'Success' : 'Failed'}</span>
+      <span class="result-timestamp">${timestamp}</span>
+    </div>
+    <div class="result-script-name">Script: ${escapeHtml(scriptName)}</div>
+    <div class="result-output">
+      <strong>Output:</strong>
+      <pre>${escapeHtml(result.output || 'No output')}</pre>
+    </div>
+  `;
+
+  elements.scriptResultDisplay.classList.remove('hidden');
+}
+
+/**
+ * Clear the script result display
+ */
+function clearResultDisplay() {
+  if (elements.scriptResultDisplay && elements.scriptResultContent) {
+    elements.scriptResultContent.innerHTML = '';
+    elements.scriptResultDisplay.classList.add('hidden');
+  }
+}
+
+/**
+ * Open browser console manually
+ */
+function openBrowserConsole() {
+  // Show initial status
+  showStatus('🔧 Preparing console...');
+
+  // Send message to background script to prepare console
+  browser.runtime.sendMessage({
+    action: 'openConsole'
+  }).then(() => {
+    showStatus('✅ Console prepared! Press F12, then click "Console" tab in Developer Tools.');
+  }).catch(error => {
+    console.error('Error opening console:', error);
+    showStatus('❌ Could not prepare console. Press F12 manually to open Developer Tools.', true);
+  });
+}
+
+/**
  * Show a status message
  */
 function showStatus(message, isError = false) {
   if (elements.statusMessage) {
     elements.statusMessage.textContent = message;
-    elements.statusMessage.style.color = isError ? '#d70022' : '#737373';
 
-    // Clear the message after 3 seconds
+    // Enhanced styling for different message types
+    if (isError) {
+      elements.statusMessage.style.color = '#d70022';
+      elements.statusMessage.style.fontWeight = 'bold';
+    } else if (message.includes('✅')) {
+      elements.statusMessage.style.color = '#22c55e';
+      elements.statusMessage.style.fontWeight = 'normal';
+    } else {
+      elements.statusMessage.style.color = '#737373';
+      elements.statusMessage.style.fontWeight = 'normal';
+    }
+
+    // Clear the message after 5 seconds for longer messages, 3 seconds for short ones
+    const clearTime = message.length > 100 ? 5000 : 3000;
     setTimeout(() => {
       elements.statusMessage.textContent = '';
-    }, 3000);
+    }, clearTime);
   }
 }
 
@@ -1511,11 +1597,11 @@ async function runTestSuite(suiteId) {
               processedCode = processedCode.replace(placeholder, variable.value);
             });
 
-            // Execute script
-            const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-            const result = await browser.tabs.sendMessage(tabs[0].id, {
+            // Execute script via background script (which will handle console opening)
+            const result = await browser.runtime.sendMessage({
               action: 'runScript',
-              code: processedCode
+              code: processedCode,
+              scriptName: script.name
             });
 
             const testCaseResult = {
@@ -1561,7 +1647,6 @@ async function runTestSuite(suiteId) {
     };
 
     showStatus(`Running test suite "${suite.name}"...`);
-    switchTab('results');
 
     const executionResult = await executor.executeTestSuite(suite, state.scripts, state.variables);
 
@@ -1863,6 +1948,56 @@ function resetInspectionButton() {
   elements.inspectElementBtn.disabled = false;
 }
 
+// Enhanced markdown renderer using marked.js library with XSS protection
+function renderMarkdown(text) {
+  // Use the bundled MarkdownRenderer if available
+  if (typeof window !== 'undefined' && window.MarkdownRenderer && window.MarkdownRenderer.renderMarkdown) {
+    return window.MarkdownRenderer.renderMarkdown(text);
+  }
+
+  // Fallback to basic text processing if library is not available
+  console.warn('MarkdownRenderer library not available, using fallback');
+  if (!text || typeof text !== 'string') {
+    return text || '';
+  }
+
+  // Basic fallback processing
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br>');
+}
+
+
+
+// Handle preset instruction selection
+function handlePresetSelection() {
+  const selectedPreset = elements.presetInstructions.value;
+
+  const presetTemplates = {
+    'issue-analysis': 'Check what is the last issue here. How to reproduce it? Is there any solution available? What is the current status?',
+    'bug-investigation': 'Identify the root cause of this issue. List steps to reproduce. Suggest potential fixes. Assess impact and priority.',
+    'code-review': 'Review this code for potential issues. Check for security vulnerabilities. Suggest improvements. Verify best practices compliance.',
+    'performance-analysis': 'Analyze performance bottlenecks. Identify slow operations. Suggest optimizations. Check resource usage patterns.',
+    'custom': ''
+  };
+
+  if (selectedPreset && presetTemplates.hasOwnProperty(selectedPreset)) {
+    elements.analysisPrompt.value = presetTemplates[selectedPreset];
+
+    // Focus on the textarea after populating it
+    elements.analysisPrompt.focus();
+
+    // Show status message
+    if (selectedPreset === 'custom') {
+      showStatus('Textarea cleared for custom input');
+    } else {
+      showStatus(`Applied "${selectedPreset.replace('-', ' ')}" template. You can edit the instructions as needed.`);
+    }
+  }
+}
+
 function clearExtractedContent() {
   elements.extractedContent.value = '';
   elements.analysisResults.innerHTML = '<div class="empty-state">No analysis results yet. Extract content and click \'Analyze\' to get AI insights.</div>';
@@ -1903,9 +2038,10 @@ async function analyzeContent() {
   try {
     const result = await performAIAnalysis(content, prompt, apiKeys);
 
-    // Display results
+    // Display results with markdown rendering
     elements.analysisResults.classList.remove('loading');
-    elements.analysisResults.textContent = result;
+    const renderedResult = renderMarkdown(result);
+    elements.analysisResults.innerHTML = renderedResult;
     showStatus('Analysis completed successfully');
 
   } catch (error) {
@@ -1999,26 +2135,40 @@ async function callOpenAI(prompt, apiKey, model = 'gpt-3.5-turbo') {
 }
 
 function copyAnalysisResults() {
-  const results = elements.analysisResults.textContent;
+  // Get the plain text content (without HTML tags) for copying
+  const results = elements.analysisResults.textContent || elements.analysisResults.innerText;
   if (!results || results.includes('No analysis results yet')) {
     showStatus('No results to copy', true);
     return;
   }
 
   navigator.clipboard.writeText(results).then(() => {
-    showStatus('Results copied to clipboard');
-  }).catch(() => {
-    showStatus('Failed to copy results', true);
+    showStatus('Analysis results copied to clipboard');
+  }).catch(err => {
+    console.error('Failed to copy results:', err);
+    // Fallback for older browsers
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = results;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      showStatus('Analysis results copied to clipboard');
+    } catch (fallbackErr) {
+      console.error('Fallback copy also failed:', fallbackErr);
+      showStatus('Failed to copy results', true);
+    }
   });
 }
 
 // Settings Functions (Sidebar)
 function saveApiKey(provider) {
   const keyInput = provider === 'openrouter' ? elements.openrouterApiKey : elements.openaiApiKey;
-  const modelSelect = provider === 'openrouter' ? elements.openrouterModel : elements.openaiModel;
+  const modelInput = provider === 'openrouter' ? elements.openrouterModel : elements.openaiModel;
 
   const apiKey = keyInput.value.trim();
-  const selectedModel = modelSelect.value;
+  const selectedModel = provider === 'openrouter' ? modelInput.value.trim() : modelInput.value;
 
   if (!apiKey) {
     showStatus('Please enter an API key', true);
@@ -2028,6 +2178,12 @@ function saveApiKey(provider) {
   // Basic validation
   if (apiKey.length < 10) {
     showStatus('API key appears to be too short', true);
+    return;
+  }
+
+  // Validate model for OpenRouter
+  if (provider === 'openrouter' && !selectedModel) {
+    showStatus('Please enter an OpenRouter model name', true);
     return;
   }
 
@@ -2093,10 +2249,15 @@ function clearApiKey(provider) {
 
       // Reset placeholder
       const keyInput = provider === 'openrouter' ? elements.openrouterApiKey : elements.openaiApiKey;
-      const modelSelect = provider === 'openrouter' ? elements.openrouterModel : elements.openaiModel;
+      const modelInput = provider === 'openrouter' ? elements.openrouterModel : elements.openaiModel;
 
       keyInput.placeholder = `Enter your ${provider === 'openrouter' ? 'OpenRouter' : 'OpenAI'} API key`;
-      modelSelect.selectedIndex = 0; // Reset to first option
+      if (provider === 'openrouter') {
+        modelInput.value = ''; // Clear the text input
+        modelInput.placeholder = 'e.g., anthropic/claude-3-haiku, openai/gpt-4, etc.';
+      } else {
+        modelInput.selectedIndex = 0; // Reset to first option for OpenAI dropdown
+      }
 
       showStatus(`${provider === 'openrouter' ? 'OpenRouter' : 'OpenAI'} settings cleared`);
     });
@@ -2153,7 +2314,7 @@ async function loadApiKeyStatus() {
 
   if (apiKeys.openrouter) {
     elements.openrouterApiKey.placeholder = 'API key configured (hidden for security)';
-    elements.openrouterModel.value = apiKeys.openrouterModel;
+    elements.openrouterModel.value = apiKeys.openrouterModel || 'anthropic/claude-3-haiku';
   }
 
   if (apiKeys.openai) {

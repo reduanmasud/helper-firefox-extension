@@ -1,14 +1,15 @@
-# Product Requirements Document: Firefox Console Script Manager Extension
+# Product Requirements Document: ScriptForge Inspector Firefox Extension
 
 ## Overview
-The Firefox Console Script Manager is a browser extension that allows users to create, manage, and execute JavaScript scripts directly in the browser console. It provides a user-friendly interface for selecting DOM elements, capturing XPaths, defining variables, and running custom scripts on any webpage.
+ScriptForge Inspector is a powerful Firefox extension designed specifically for test engineers and QA professionals. It provides a comprehensive toolkit for creating, managing, and executing JavaScript scripts with advanced element inspection capabilities, AI-powered content analysis, and robust automation features for testing workflows.
 
 ## Target Users
+- Test Engineers (Primary)
+- QA Professionals
+- Test Automation Engineers
 - Web developers
-- QA engineers
-- Web automation enthusiasts
-- Data scrapers
-- Web researchers
+- Quality Assurance Teams
+- Manual Testers transitioning to automation
 
 ## Key Features
 

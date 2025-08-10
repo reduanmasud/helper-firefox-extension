@@ -234,8 +234,12 @@ const elements = {
   runScriptBtn: document.getElementById('run-script-btn'),
   editScriptBtn: document.getElementById('edit-script-btn'),
   deleteScriptBtn: document.getElementById('delete-script-btn'),
+  openConsoleBtn: document.getElementById('open-console-btn'),
   scriptNameInput: document.getElementById('script-name'),
   scriptCodeInput: document.getElementById('script-code'),
+  scriptResultDisplay: document.getElementById('script-result-display'),
+  scriptResultContent: document.getElementById('script-result-content'),
+  clearResultDisplayBtn: document.getElementById('clear-result-display-btn'),
   
   // Variables Tab
   variablesList: document.getElementById('variables-list'),
@@ -403,6 +407,8 @@ function setupEventListeners() {
   elements.runScriptBtn.addEventListener('click', runCurrentScript);
   elements.editScriptBtn.addEventListener('click', editCurrentScript);
   elements.deleteScriptBtn.addEventListener('click', deleteCurrentScript);
+  elements.openConsoleBtn.addEventListener('click', openBrowserConsole);
+  elements.clearResultDisplayBtn.addEventListener('click', clearResultDisplay);
   
   // Variables Tab
   elements.newVariableBtn.addEventListener('click', createNewVariable);
@@ -583,24 +589,26 @@ function startElementSelection() {
 
 function runCurrentScript() {
   if (!state.currentScriptId) return;
-  
+
   const script = state.scripts.find(s => s.id === state.currentScriptId);
   if (!script) return;
-  
+
+  // Show initial status
+  showStatus(`🚀 Running "${script.name}"...`, 'info');
+
   // Process script code to replace variable placeholders
   let processedCode = script.code;
   state.variables.forEach(variable => {
     const placeholder = new RegExp(`\\$\\{${variable.name}\\}`, 'g');
     processedCode = processedCode.replace(placeholder, variable.value);
   });
-  
-  // Send script to content script for execution
-  browser.tabs.query({ active: true, currentWindow: true })
-    .then(tabs => {
-      browser.tabs.sendMessage(tabs[0].id, {
-        action: 'runScript',
-        code: processedCode
-      })
+
+  // Send script to background script for execution (which will handle console opening)
+  browser.runtime.sendMessage({
+    action: 'runScript',
+    code: processedCode,
+    scriptName: script.name
+  })
         .then(result => {
           // Add result to results list
           const newResult = {
@@ -610,21 +618,32 @@ function runCurrentScript() {
             success: result.success,
             output: result.output
           };
-          
+
           state.results.unshift(newResult);
           if (state.results.length > 50) {
             state.results = state.results.slice(0, 50); // Keep only the last 50 results
           }
-          
+
           saveState();
-          renderResultsList();
-          switchTab('results');
-          showStatus(`Script "${script.name}" executed`, 'success');
+
+          // Show result in the dedicated display area
+          showScriptResult(script.name, result);
+
+          // Show enhanced status message with output preview
+          const outputPreview = result.output.length > 100 ?
+            result.output.substring(0, 100) + '...' :
+            result.output;
+          const statusMsg = result.success ?
+            `✅ Script "${script.name}" executed! Click "Console" tab in Developer Tools to see output.` :
+            `❌ Script "${script.name}" failed: ${outputPreview}. Click "Console" tab in Developer Tools for details.`;
+          showStatus(statusMsg, result.success ? 'success' : 'error');
+
+          // Log full output to console for debugging
+          console.log(`Script "${script.name}" execution result:`, result);
         })
         .catch(error => {
           showStatus(`Error executing script: ${error.message}`, 'error');
         });
-    });
 }
 
 // Variables Tab Functions
@@ -972,15 +991,69 @@ browser.runtime.onMessage.addListener((message) => {
 });
 
 // Utility Functions
+/**
+ * Show script execution result in the dedicated display area
+ */
+function showScriptResult(scriptName, result) {
+  if (!elements.scriptResultDisplay || !elements.scriptResultContent) return;
+
+  const timestamp = new Date().toLocaleString();
+  const statusClass = result.success ? 'result-success' : 'result-error';
+  const statusIcon = result.success ? '✅' : '❌';
+
+  elements.scriptResultContent.innerHTML = `
+    <div class="result-header">
+      <span class="result-status ${statusClass}">${statusIcon} ${result.success ? 'Success' : 'Failed'}</span>
+      <span class="result-timestamp">${timestamp}</span>
+    </div>
+    <div class="result-script-name">Script: ${escapeHtml(scriptName)}</div>
+    <div class="result-output">
+      <strong>Output:</strong>
+      <pre>${escapeHtml(result.output || 'No output')}</pre>
+    </div>
+  `;
+
+  elements.scriptResultDisplay.classList.remove('hidden');
+}
+
+/**
+ * Clear the script result display
+ */
+function clearResultDisplay() {
+  if (elements.scriptResultDisplay && elements.scriptResultContent) {
+    elements.scriptResultContent.innerHTML = '';
+    elements.scriptResultDisplay.classList.add('hidden');
+  }
+}
+
+/**
+ * Open browser console manually
+ */
+function openBrowserConsole() {
+  // Show initial status
+  showStatus('🔧 Preparing console...', 'info');
+
+  // Send message to background script to prepare console
+  browser.runtime.sendMessage({
+    action: 'openConsole'
+  }).then(() => {
+    showStatus('✅ Console prepared! Press F12, then click "Console" tab in Developer Tools.', 'success');
+  }).catch(error => {
+    console.error('Error opening console:', error);
+    showStatus('❌ Could not prepare console. Press F12 manually to open Developer Tools.', 'error');
+  });
+}
+
 function showStatus(message, type = 'info') {
   elements.statusMessage.textContent = message;
   elements.statusMessage.className = `status status-${type}`;
-  
-  // Clear status after 3 seconds
+
+  // Clear status after longer time for longer messages
+  const clearTime = message.length > 100 ? 5000 : 3000;
   setTimeout(() => {
     elements.statusMessage.textContent = '';
     elements.statusMessage.className = 'status';
-  }, 3000);
+  }, clearTime);
 }
 
 function escapeHtml(text) {
@@ -1247,8 +1320,6 @@ async function runTestSuite(suiteId) {
     executor.setCallbacks({
       onStart: (executionResult) => {
         showStatus(`Starting test suite "${suite.name}"...`, 'info');
-        // Switch to results tab to show progress
-        switchTab('results');
         // Add execution progress to results
         addExecutionProgress(executionResult);
       },
@@ -1758,10 +1829,10 @@ function copyAnalysisResults() {
 // Settings Functions
 function saveApiKey(provider) {
   const keyInput = provider === 'openrouter' ? elements.openrouterApiKey : elements.openaiApiKey;
-  const modelSelect = provider === 'openrouter' ? elements.openrouterModel : elements.openaiModel;
+  const modelInput = provider === 'openrouter' ? elements.openrouterModel : elements.openaiModel;
 
   const apiKey = keyInput.value.trim();
-  const selectedModel = modelSelect.value;
+  const selectedModel = provider === 'openrouter' ? modelInput.value.trim() : modelInput.value;
 
   if (!apiKey) {
     showStatus('Please enter an API key', 'error');
@@ -1771,6 +1842,12 @@ function saveApiKey(provider) {
   // Basic validation
   if (apiKey.length < 10) {
     showStatus('API key appears to be too short', 'error');
+    return;
+  }
+
+  // Validate model for OpenRouter
+  if (provider === 'openrouter' && !selectedModel) {
+    showStatus('Please enter an OpenRouter model name', 'error');
     return;
   }
 
@@ -1831,10 +1908,15 @@ async function clearApiKey(provider) {
 
     // Reset placeholder
     const keyInput = provider === 'openrouter' ? elements.openrouterApiKey : elements.openaiApiKey;
-    const modelSelect = provider === 'openrouter' ? elements.openrouterModel : elements.openaiModel;
+    const modelInput = provider === 'openrouter' ? elements.openrouterModel : elements.openaiModel;
 
     keyInput.placeholder = `Enter your ${provider === 'openrouter' ? 'OpenRouter' : 'OpenAI'} API key`;
-    modelSelect.selectedIndex = 0; // Reset to first option
+    if (provider === 'openrouter') {
+      modelInput.value = ''; // Clear the text input
+      modelInput.placeholder = 'e.g., anthropic/claude-3-haiku, openai/gpt-4, etc.';
+    } else {
+      modelInput.selectedIndex = 0; // Reset to first option for OpenAI dropdown
+    }
 
     showStatus(`${provider === 'openrouter' ? 'OpenRouter' : 'OpenAI'} settings cleared`, 'success');
   } catch (error) {
@@ -1890,7 +1972,7 @@ async function loadApiKeyStatus() {
 
   if (apiKeys.openrouter) {
     elements.openrouterApiKey.placeholder = 'API key configured (hidden for security)';
-    elements.openrouterModel.value = apiKeys.openrouterModel;
+    elements.openrouterModel.value = apiKeys.openrouterModel || 'anthropic/claude-3-haiku';
   }
 
   if (apiKeys.openai) {
