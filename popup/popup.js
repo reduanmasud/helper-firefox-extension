@@ -1758,10 +1758,10 @@ function copyAnalysisResults() {
 // Settings Functions
 function saveApiKey(provider) {
   const keyInput = provider === 'openrouter' ? elements.openrouterApiKey : elements.openaiApiKey;
-  const modelSelect = provider === 'openrouter' ? elements.openrouterModel : elements.openaiModel;
+  const modelInput = provider === 'openrouter' ? elements.openrouterModel : elements.openaiModel;
 
   const apiKey = keyInput.value.trim();
-  const selectedModel = modelSelect.value;
+  const selectedModel = provider === 'openrouter' ? modelInput.value.trim() : modelInput.value;
 
   if (!apiKey) {
     showStatus('Please enter an API key', 'error');
@@ -1771,6 +1771,12 @@ function saveApiKey(provider) {
   // Basic validation
   if (apiKey.length < 10) {
     showStatus('API key appears to be too short', 'error');
+    return;
+  }
+
+  // Validate model for OpenRouter
+  if (provider === 'openrouter' && !selectedModel) {
+    showStatus('Please enter an OpenRouter model name', 'error');
     return;
   }
 
@@ -1831,10 +1837,15 @@ async function clearApiKey(provider) {
 
     // Reset placeholder
     const keyInput = provider === 'openrouter' ? elements.openrouterApiKey : elements.openaiApiKey;
-    const modelSelect = provider === 'openrouter' ? elements.openrouterModel : elements.openaiModel;
+    const modelInput = provider === 'openrouter' ? elements.openrouterModel : elements.openaiModel;
 
     keyInput.placeholder = `Enter your ${provider === 'openrouter' ? 'OpenRouter' : 'OpenAI'} API key`;
-    modelSelect.selectedIndex = 0; // Reset to first option
+    if (provider === 'openrouter') {
+      modelInput.value = ''; // Clear the text input
+      modelInput.placeholder = 'e.g., anthropic/claude-3-haiku, openai/gpt-4, etc.';
+    } else {
+      modelInput.selectedIndex = 0; // Reset to first option for OpenAI dropdown
+    }
 
     showStatus(`${provider === 'openrouter' ? 'OpenRouter' : 'OpenAI'} settings cleared`, 'success');
   } catch (error) {
@@ -1890,7 +1901,7 @@ async function loadApiKeyStatus() {
 
   if (apiKeys.openrouter) {
     elements.openrouterApiKey.placeholder = 'API key configured (hidden for security)';
-    elements.openrouterModel.value = apiKeys.openrouterModel;
+    elements.openrouterModel.value = apiKeys.openrouterModel || 'anthropic/claude-3-haiku';
   }
 
   if (apiKeys.openai) {

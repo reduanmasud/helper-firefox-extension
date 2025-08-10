@@ -275,16 +275,7 @@
             <label for="openrouter-api-key">OpenRouter API Key:</label>
             <input type="password" id="openrouter-api-key" class="api-key-input" placeholder="Enter your OpenRouter API key">
             <label for="openrouter-model">OpenRouter Model:</label>
-            <select id="openrouter-model" class="model-select">
-              <option value="anthropic/claude-3-haiku">Claude 3 Haiku (Fast & Affordable)</option>
-              <option value="anthropic/claude-3-sonnet">Claude 3 Sonnet (Balanced)</option>
-              <option value="anthropic/claude-3-opus">Claude 3 Opus (Most Capable)</option>
-              <option value="openai/gpt-3.5-turbo">GPT-3.5 Turbo</option>
-              <option value="openai/gpt-4">GPT-4</option>
-              <option value="openai/gpt-4-turbo">GPT-4 Turbo</option>
-              <option value="meta-llama/llama-2-70b-chat">Llama 2 70B</option>
-              <option value="mistralai/mixtral-8x7b-instruct">Mixtral 8x7B</option>
-            </select>
+            <input type="text" id="openrouter-model" class="model-input" placeholder="e.g., anthropic/claude-3-haiku, openai/gpt-4, etc.">
             <div class="api-key-actions">
               <button id="save-openrouter-key-btn" class="secondary-btn">Save</button>
               <button id="clear-openrouter-key-btn" class="text-btn">Clear</button>

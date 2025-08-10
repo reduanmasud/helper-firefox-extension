@@ -652,7 +652,7 @@ main {
   box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
 }
 
-.model-select {
+.model-select, .model-input {
   width: 100%;
   padding: 6px;
   border: 1px solid var(--border-color);
@@ -662,7 +662,7 @@ main {
   background-color: white;
 }
 
-.model-select:focus {
+.model-select:focus, .model-input:focus {
   outline: none;
   border-color: var(--primary-color);
   box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
