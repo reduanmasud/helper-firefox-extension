@@ -168,6 +168,6 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // Handle browser action click (toolbar icon)
 browser.browserAction.onClicked.addListener((tab) => {
-  // This won't be triggered if we have a popup defined in manifest.json
-  // But we'll keep it here in case we want to change the behavior later
+  // Toggle the sidebar when the extension icon is clicked
+  browser.sidebarAction.toggle();
 });

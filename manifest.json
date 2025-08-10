@@ -17,8 +17,7 @@
   ],
   "browser_action": {
     "default_icon": "icons/icon-48.svg",
-    "default_title": "Console Script Manager",
-    "default_popup": "popup/popup.html"
+    "default_title": "Console Script Manager"
   },
   "sidebar_action": {
     "default_icon": "icons/icon-48.svg",
