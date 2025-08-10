@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beta Badge Test</title>
+    <link rel="stylesheet" href="sidebar/sidebar.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .demo-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .demo-title {
+            color: #333;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .tabs-demo {
+            display: flex;
+            gap: 4px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        .size-demo {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .size-demo h4 {
+            margin-top: 0;
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+    <h1>Inspector Tab Beta Badge Demo</h1>
+    
+    <div class="demo-container">
+        <h2 class="demo-title">Tab Navigation with Beta Badge</h2>
+        
+        <div class="size-demo">
+            <h4>Normal Size</h4>
+            <div class="tabs-demo">
+                <button class="tab-btn active">Scripts</button>
+                <button class="tab-btn">Analyzer</button>
+                <button class="tab-btn">Settings</button>
+                <button class="tab-btn">Inspector <span class="beta-badge">BETA</span></button>
+            </div>
+        </div>
+
+        <div class="size-demo">
+            <h4>Hover State</h4>
+            <div class="tabs-demo">
+                <button class="tab-btn">Scripts</button>
+                <button class="tab-btn">Analyzer</button>
+                <button class="tab-btn">Settings</button>
+                <button class="tab-btn" style="background-color: var(--bg-light);">Inspector <span class="beta-badge">BETA</span></button>
+            </div>
+        </div>
+
+        <div class="size-demo">
+            <h4>Active State</h4>
+            <div class="tabs-demo">
+                <button class="tab-btn">Scripts</button>
+                <button class="tab-btn">Analyzer</button>
+                <button class="tab-btn">Settings</button>
+                <button class="tab-btn active">Inspector <span class="beta-badge">BETA</span></button>
+            </div>
+        </div>
+
+        <div class="size-demo">
+            <h4>Mobile Size (Responsive)</h4>
+            <div class="tabs-demo" style="max-width: 300px;">
+                <button class="tab-btn" style="font-size: 11px; padding: 4px 8px;">Scripts</button>
+                <button class="tab-btn" style="font-size: 11px; padding: 4px 8px;">Analyzer</button>
+                <button class="tab-btn" style="font-size: 11px; padding: 4px 8px;">Settings</button>
+                <button class="tab-btn active" style="font-size: 11px; padding: 4px 8px;">Inspector <span class="beta-badge" style="font-size: 8px; padding: 1px 3px; margin-left: 2px;">BETA</span></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="demo-container">
+        <h2 class="demo-title">Badge Variations</h2>
+        
+        <div class="size-demo">
+            <h4>Different Badge Colors</h4>
+            <p>
+                <button class="tab-btn">Inspector <span class="beta-badge">BETA</span></button>
+                <button class="tab-btn">Feature <span class="beta-badge" style="background-color: #28a745;">NEW</span></button>
+                <button class="tab-btn">Tool <span class="beta-badge" style="background-color: #ffc107; color: #212529;">ALPHA</span></button>
+                <button class="tab-btn">Option <span class="beta-badge" style="background-color: #6f42c1;">PREVIEW</span></button>
+            </p>
+        </div>
+
+        <div class="size-demo">
+            <h4>Badge Design Details</h4>
+            <ul>
+                <li><strong>Color:</strong> Orange (#ff6b35) for high visibility</li>
+                <li><strong>Size:</strong> 9px font, responsive to 8px on mobile</li>
+                <li><strong>Spacing:</strong> 4px margin-left, 2px on mobile</li>
+                <li><strong>Style:</strong> Bold, uppercase, rounded corners</li>
+                <li><strong>Position:</strong> Vertically aligned to top of text</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="demo-container">
+        <h2 class="demo-title">Integration Preview</h2>
+        <p>The beta badge has been added to the Inspector tab to indicate that this feature is in beta testing. The badge:</p>
+        <ul>
+            <li>✅ Clearly identifies beta features</li>
+            <li>✅ Maintains visual consistency with the extension design</li>
+            <li>✅ Scales appropriately on different screen sizes</li>
+            <li>✅ Doesn't interfere with tab functionality</li>
+            <li>✅ Uses accessible color contrast</li>
+        </ul>
+    </div>
+
+    <script>
+        // Add hover effects for demo
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('mouseenter', function() {
+                if (!this.classList.contains('active')) {
+                    this.style.backgroundColor = 'var(--bg-light)';
+                }
+            });
+            
+            btn.addEventListener('mouseleave', function() {
+                if (!this.classList.contains('active')) {
+                    this.style.backgroundColor = '';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

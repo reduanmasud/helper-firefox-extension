@@ -2,9 +2,10 @@ module.exports = {
   // Global options:
   sourceDir: '.',
   artifactsDir: './dist',
-  
+
   // Command options:
   build: {
+    filename: 'scriptforge-inspector-{version}.zip'
   },
   run: {
     firefox: 'firefox',

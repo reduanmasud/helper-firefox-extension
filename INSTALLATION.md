@@ -1,4 +1,4 @@
-# Installation Guide for Console Script Manager
+# Installation Guide for ScriptForge Inspector
 
 ## Development Installation
 
@@ -14,7 +14,7 @@
 
    ```bash
    git clone <repository-url>
-   cd console-script-manager
+   cd scriptforge-inspector
    ```
 
 2. **Install dependencies**
@@ -65,7 +65,7 @@
 
 - Right-click on the Firefox toolbar
 - Select "Customize..."
-- Find the Console Script Manager icon and drag it to your toolbar
+- Find the ScriptForge Inspector icon and drag it to your toolbar
 
 ### Element selection not working
 
