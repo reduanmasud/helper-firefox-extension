@@ -1,7 +1,7 @@
 {
-  "name": "console-script-manager",
+  "name": "scriptforge-inspector",
   "version": "1.0.0",
-  "description": "Firefox extension to create, manage and run JavaScript scripts in the browser console",
+  "description": "ScriptForge Inspector - A powerful Firefox extension for test engineers to create, manage, and execute JavaScript scripts with advanced element inspection capabilities",
   "main": "background/background.js",
   "scripts": {
     "build": "node build.js && web-ext build --source-dir=. --artifacts-dir=./dist --overwrite-dest",
@@ -12,11 +12,14 @@
   },
   "keywords": [
     "firefox-extension",
+    "test-automation",
     "javascript",
-    "console",
+    "element-inspector",
     "script-manager",
     "xpath",
-    "element-selector"
+    "playwright",
+    "qa-tools",
+    "test-engineering"
   ],
   "author": "",
   "license": "MIT",
