@@ -108,6 +108,7 @@ const elements = {
   inspectElementBtn: document.getElementById('inspect-element-btn'),
   clearContentBtn: document.getElementById('clear-content-btn'),
   extractedContent: document.getElementById('extracted-content'),
+  presetInstructions: document.getElementById('preset-instructions'),
   analysisPrompt: document.getElementById('analysis-prompt'),
   analyzeBtn: document.getElementById('analyze-btn'),
   copyResultsBtn: document.getElementById('copy-results-btn'),
@@ -303,6 +304,7 @@ function setupEventListeners() {
   // Analyzer Tab
   elements.inspectElementBtn.addEventListener('click', startContentInspection);
   elements.clearContentBtn.addEventListener('click', clearExtractedContent);
+  elements.presetInstructions.addEventListener('change', handlePresetSelection);
   elements.analyzeBtn.addEventListener('click', analyzeContent);
   elements.copyResultsBtn.addEventListener('click', copyAnalysisResults);
 
@@ -1944,6 +1946,33 @@ function resetInspectionButton() {
   state.isSelectingElement = false;
   elements.inspectElementBtn.textContent = 'Inspect Element';
   elements.inspectElementBtn.disabled = false;
+}
+
+// Handle preset instruction selection
+function handlePresetSelection() {
+  const selectedPreset = elements.presetInstructions.value;
+
+  const presetTemplates = {
+    'issue-analysis': 'Check what is the last issue here. How to reproduce it? Is there any solution available? What is the current status?',
+    'bug-investigation': 'Identify the root cause of this issue. List steps to reproduce. Suggest potential fixes. Assess impact and priority.',
+    'code-review': 'Review this code for potential issues. Check for security vulnerabilities. Suggest improvements. Verify best practices compliance.',
+    'performance-analysis': 'Analyze performance bottlenecks. Identify slow operations. Suggest optimizations. Check resource usage patterns.',
+    'custom': ''
+  };
+
+  if (selectedPreset && presetTemplates.hasOwnProperty(selectedPreset)) {
+    elements.analysisPrompt.value = presetTemplates[selectedPreset];
+
+    // Focus on the textarea after populating it
+    elements.analysisPrompt.focus();
+
+    // Show status message
+    if (selectedPreset === 'custom') {
+      showStatus('Textarea cleared for custom input');
+    } else {
+      showStatus(`Applied "${selectedPreset.replace('-', ' ')}" template. You can edit the instructions as needed.`);
+    }
+  }
 }
 
 function clearExtractedContent() {
