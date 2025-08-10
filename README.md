@@ -109,7 +109,7 @@ ScriptForge Inspector is a comprehensive Firefox extension designed specifically
    - Click "Load Temporary Add-on..."
    - Select the `manifest.json` file from the project directory
 
-### 📁 Manual Installation from Source
+### 📁 Manual Installation from Source (FOLLOW THIS FOR NOW)
 
 1. **Download the latest release**
    - Go to [Releases](https://github.com/reduanmasud/scriptforge-inspector/releases)
@@ -120,6 +120,11 @@ ScriptForge Inspector is a comprehensive Firefox extension designed specifically
    - Click "This Firefox"
    - Click "Load Temporary Add-on..."
    - Select the downloaded ZIP file
+3. SCREENSHOTS
+<img width="1860" height="710" alt="image" src="https://github.com/user-attachments/assets/2ce7d0b5-db52-4999-b495-496e43c44b25" />
+<img width="1865" height="641" alt="image" src="https://github.com/user-attachments/assets/481325c5-b75c-4f83-a0c2-dfd6ce5eea0a" />
+
+
 
 ## 📖 User Manual
 
@@ -152,14 +157,15 @@ The Scripts tab is your main workspace for creating and managing JavaScript auto
    const username = '${testUsername}';
    document.querySelector('#username').value = username;
    ```
-
-4. **Use Element Selection**
+   Example video: https://d.pr/v/VYDgZF
+   
+5. **Use Element Selection**
    - Click "Select Element" button
    - Your cursor will change to a crosshair
    - Click on any element on the webpage
    - The XPath will be automatically inserted into your script
 
-5. **Save Your Script**
+6. **Save Your Script**
    - Click "Save" to store your script
    - Scripts are saved locally in your browser
 
@@ -395,12 +401,12 @@ scriptforge-inspector/
 **MD. REDUAN MASUD**
 - 🏢 **Position**: Software Test Engineer @ Startise in xCloud
 - 🐙 **GitHub**: [http://github.com/reduanmasud](http://github.com/reduanmasud)
-- 💼 **Specialization**: Test Automation, Quality Assurance, Web Testing
-- 🌟 **Expertise**: JavaScript, Test Frameworks, Browser Automation
+
 
 ### About the Author
 
 Reduan is a passionate Software Test Engineer with extensive experience in test automation and quality assurance. Working at Startise in xCloud, he specializes in creating robust testing solutions and tools that help teams deliver high-quality software. ScriptForge Inspector was born from his daily experience with testing challenges and the need for better tooling in the QA workflow.
+Also has knowleded on Ubuntu, Bash Scriptiong & Laravel
 
 ## 🤝 Contributing
 
