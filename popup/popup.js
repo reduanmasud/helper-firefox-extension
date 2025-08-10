@@ -236,6 +236,9 @@ const elements = {
   deleteScriptBtn: document.getElementById('delete-script-btn'),
   scriptNameInput: document.getElementById('script-name'),
   scriptCodeInput: document.getElementById('script-code'),
+  scriptResultDisplay: document.getElementById('script-result-display'),
+  scriptResultContent: document.getElementById('script-result-content'),
+  clearResultDisplayBtn: document.getElementById('clear-result-display-btn'),
   
   // Variables Tab
   variablesList: document.getElementById('variables-list'),
@@ -403,6 +406,7 @@ function setupEventListeners() {
   elements.runScriptBtn.addEventListener('click', runCurrentScript);
   elements.editScriptBtn.addEventListener('click', editCurrentScript);
   elements.deleteScriptBtn.addEventListener('click', deleteCurrentScript);
+  elements.clearResultDisplayBtn.addEventListener('click', clearResultDisplay);
   
   // Variables Tab
   elements.newVariableBtn.addEventListener('click', createNewVariable);
@@ -610,16 +614,28 @@ function runCurrentScript() {
             success: result.success,
             output: result.output
           };
-          
+
           state.results.unshift(newResult);
           if (state.results.length > 50) {
             state.results = state.results.slice(0, 50); // Keep only the last 50 results
           }
-          
+
           saveState();
-          renderResultsList();
-          switchTab('results');
-          showStatus(`Script "${script.name}" executed`, 'success');
+
+          // Show result in the dedicated display area
+          showScriptResult(script.name, result);
+
+          // Show enhanced status message with output preview
+          const outputPreview = result.output.length > 100 ?
+            result.output.substring(0, 100) + '...' :
+            result.output;
+          const statusMsg = result.success ?
+            `✅ Script "${script.name}" executed successfully${outputPreview ? ': ' + outputPreview : ''}` :
+            `❌ Script "${script.name}" failed: ${outputPreview}`;
+          showStatus(statusMsg, result.success ? 'success' : 'error');
+
+          // Log full output to console for debugging
+          console.log(`Script "${script.name}" execution result:`, result);
         })
         .catch(error => {
           showStatus(`Error executing script: ${error.message}`, 'error');
@@ -972,15 +988,51 @@ browser.runtime.onMessage.addListener((message) => {
 });
 
 // Utility Functions
+/**
+ * Show script execution result in the dedicated display area
+ */
+function showScriptResult(scriptName, result) {
+  if (!elements.scriptResultDisplay || !elements.scriptResultContent) return;
+
+  const timestamp = new Date().toLocaleString();
+  const statusClass = result.success ? 'result-success' : 'result-error';
+  const statusIcon = result.success ? '✅' : '❌';
+
+  elements.scriptResultContent.innerHTML = `
+    <div class="result-header">
+      <span class="result-status ${statusClass}">${statusIcon} ${result.success ? 'Success' : 'Failed'}</span>
+      <span class="result-timestamp">${timestamp}</span>
+    </div>
+    <div class="result-script-name">Script: ${escapeHtml(scriptName)}</div>
+    <div class="result-output">
+      <strong>Output:</strong>
+      <pre>${escapeHtml(result.output || 'No output')}</pre>
+    </div>
+  `;
+
+  elements.scriptResultDisplay.classList.remove('hidden');
+}
+
+/**
+ * Clear the script result display
+ */
+function clearResultDisplay() {
+  if (elements.scriptResultDisplay && elements.scriptResultContent) {
+    elements.scriptResultContent.innerHTML = '';
+    elements.scriptResultDisplay.classList.add('hidden');
+  }
+}
+
 function showStatus(message, type = 'info') {
   elements.statusMessage.textContent = message;
   elements.statusMessage.className = `status status-${type}`;
-  
-  // Clear status after 3 seconds
+
+  // Clear status after longer time for longer messages
+  const clearTime = message.length > 100 ? 5000 : 3000;
   setTimeout(() => {
     elements.statusMessage.textContent = '';
     elements.statusMessage.className = 'status';
-  }, 3000);
+  }, clearTime);
 }
 
 function escapeHtml(text) {
@@ -1247,8 +1299,6 @@ async function runTestSuite(suiteId) {
     executor.setCallbacks({
       onStart: (executionResult) => {
         showStatus(`Starting test suite "${suite.name}"...`, 'info');
-        // Switch to results tab to show progress
-        switchTab('results');
         // Add execution progress to results
         addExecutionProgress(executionResult);
       },

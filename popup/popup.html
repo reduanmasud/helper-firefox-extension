@@ -15,7 +15,7 @@
         <button class="tab-btn" data-tab="variables">Variables</button>
         <button class="tab-btn" data-tab="test-suites">Test Suites</button>
         <button class="tab-btn" data-tab="analyzer">Analyzer</button>
-        <button class="tab-btn" data-tab="results">Results</button>
+        <!-- <button class="tab-btn" data-tab="results">Results</button> -->
         <button class="tab-btn" data-tab="inspector">Inspector</button>
         <button class="tab-btn" data-tab="settings">Settings</button>
       </div>
@@ -50,6 +50,15 @@
           <button id="run-script-btn" class="primary-btn">Run Script</button>
           <button id="edit-script-btn" class="secondary-btn">Edit</button>
           <button id="delete-script-btn" class="danger-btn">Delete</button>
+        </div>
+
+        <!-- Script Execution Result Display -->
+        <div class="script-result-display hidden" id="script-result-display">
+          <h3>Last Execution Result</h3>
+          <div class="result-content" id="script-result-content">
+            <!-- Result will be displayed here -->
+          </div>
+          <button id="clear-result-display-btn" class="text-btn">Clear</button>
         </div>
       </div>
 

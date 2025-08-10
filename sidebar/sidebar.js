@@ -50,6 +50,9 @@ const elements = {
   scriptNameInput: document.getElementById('script-name'),
   scriptCodeInput: document.getElementById('script-code'),
   selectElementBtn: document.getElementById('select-element-btn'),
+  scriptResultDisplay: document.getElementById('script-result-display'),
+  scriptResultContent: document.getElementById('script-result-content'),
+  clearResultDisplayBtn: document.getElementById('clear-result-display-btn'),
 
   // Variables Tab
   variablesList: document.getElementById('variables-list'),
@@ -271,6 +274,7 @@ function setupEventListeners() {
   elements.deleteScriptBtn.addEventListener('click', deleteCurrentScript);
   elements.runScriptBtn.addEventListener('click', runCurrentScript);
   elements.selectElementBtn.addEventListener('click', startElementSelection);
+  elements.clearResultDisplayBtn.addEventListener('click', clearResultDisplay);
 
   // Variables Tab
   elements.newVariableBtn.addEventListener('click', newVariable);
@@ -645,9 +649,21 @@ function runCurrentScript() {
           }
 
           saveState();
-          renderResultsList();
-          switchTab('results');
-          showStatus(`Script "${script.name}" executed`);
+
+          // Show result in the dedicated display area
+          showScriptResult(script.name, result);
+
+          // Show enhanced status message with output preview
+          const outputPreview = result.output.length > 100 ?
+            result.output.substring(0, 100) + '...' :
+            result.output;
+          const statusMsg = result.success ?
+            `✅ Script "${script.name}" executed successfully${outputPreview ? ': ' + outputPreview : ''}` :
+            `❌ Script "${script.name}" failed: ${outputPreview}`;
+          showStatus(statusMsg, !result.success);
+
+          // Log full output to console for debugging
+          console.log(`Script "${script.name}" execution result:`, result);
         })
         .catch(error => {
           showStatus(`Error executing script: ${error.message}`, true);
@@ -1173,17 +1189,64 @@ function testXPath() {
 }
 
 /**
+ * Show script execution result in the dedicated display area
+ */
+function showScriptResult(scriptName, result) {
+  if (!elements.scriptResultDisplay || !elements.scriptResultContent) return;
+
+  const timestamp = new Date().toLocaleString();
+  const statusClass = result.success ? 'result-success' : 'result-error';
+  const statusIcon = result.success ? '✅' : '❌';
+
+  elements.scriptResultContent.innerHTML = `
+    <div class="result-header">
+      <span class="result-status ${statusClass}">${statusIcon} ${result.success ? 'Success' : 'Failed'}</span>
+      <span class="result-timestamp">${timestamp}</span>
+    </div>
+    <div class="result-script-name">Script: ${escapeHtml(scriptName)}</div>
+    <div class="result-output">
+      <strong>Output:</strong>
+      <pre>${escapeHtml(result.output || 'No output')}</pre>
+    </div>
+  `;
+
+  elements.scriptResultDisplay.classList.remove('hidden');
+}
+
+/**
+ * Clear the script result display
+ */
+function clearResultDisplay() {
+  if (elements.scriptResultDisplay && elements.scriptResultContent) {
+    elements.scriptResultContent.innerHTML = '';
+    elements.scriptResultDisplay.classList.add('hidden');
+  }
+}
+
+/**
  * Show a status message
  */
 function showStatus(message, isError = false) {
   if (elements.statusMessage) {
     elements.statusMessage.textContent = message;
-    elements.statusMessage.style.color = isError ? '#d70022' : '#737373';
 
-    // Clear the message after 3 seconds
+    // Enhanced styling for different message types
+    if (isError) {
+      elements.statusMessage.style.color = '#d70022';
+      elements.statusMessage.style.fontWeight = 'bold';
+    } else if (message.includes('✅')) {
+      elements.statusMessage.style.color = '#22c55e';
+      elements.statusMessage.style.fontWeight = 'normal';
+    } else {
+      elements.statusMessage.style.color = '#737373';
+      elements.statusMessage.style.fontWeight = 'normal';
+    }
+
+    // Clear the message after 5 seconds for longer messages, 3 seconds for short ones
+    const clearTime = message.length > 100 ? 5000 : 3000;
     setTimeout(() => {
       elements.statusMessage.textContent = '';
-    }, 3000);
+    }, clearTime);
   }
 }
 
@@ -1561,7 +1624,6 @@ async function runTestSuite(suiteId) {
     };
 
     showStatus(`Running test suite "${suite.name}"...`);
-    switchTab('results');
 
     const executionResult = await executor.executeTestSuite(suite, state.scripts, state.variables);
 
