@@ -4,11 +4,11 @@
   "description": "ScriptForge Inspector - A powerful Firefox extension for test engineers to create, manage, and execute JavaScript scripts with advanced element inspection capabilities",
   "main": "background/background.js",
   "scripts": {
-    "build": "node build.js && web-ext build --source-dir=. --artifacts-dir=./dist --overwrite-dest",
+    "build": "node build.js && web-ext build --config=web-ext-config.cjs",
     "build:bundles": "node build.js",
-    "lint": "web-ext lint --source-dir=.",
-    "start": "npm run build:bundles && web-ext run --source-dir=.",
-    "dev": "npm run build:bundles && web-ext run --source-dir=."
+    "lint": "web-ext lint --config=web-ext-config.cjs",
+    "start": "npm run build:bundles && web-ext run --config=web-ext-config.cjs",
+    "dev": "npm run build:bundles && web-ext run --config=web-ext-config.cjs"
   },
   "keywords": [
     "firefox-extension",
