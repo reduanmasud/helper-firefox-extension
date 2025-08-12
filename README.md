@@ -88,10 +88,6 @@ QA Tools is a comprehensive Firefox extension designed specifically for test eng
 #### Steps
 
 1. **Clone the repository**
-   ```bash
-   git clone https://github.com/reduanmasud/qa-tools.git
-   cd qa-tools
-   ```
 
 2. **Install dependencies**
    ```bash
