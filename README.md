@@ -1,12 +1,12 @@
-# ScriptForge Inspector - Firefox Extension
+# QA Tools - Firefox Extension
 
 <div align="center">
 
-![ScriptForge Inspector Logo](icons/icon-96.svg)
+![QA Tools Logo](icons/icon-96.svg)
 
 **A powerful Firefox extension designed for test engineers**
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/reduanmasud/scriptforge-inspector)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/reduanmasud/qa-tools)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Firefox](https://img.shields.io/badge/firefox-compatible-orange.svg)](https://www.mozilla.org/firefox/)
 
@@ -27,7 +27,7 @@
 
 ## 🔍 Overview
 
-ScriptForge Inspector is a comprehensive Firefox extension designed specifically for test engineers and QA professionals. It provides a powerful toolkit for creating, managing, and executing JavaScript scripts with advanced element inspection capabilities, AI-powered content analysis, and robust automation features for testing workflows.
+QA Tools is a comprehensive Firefox extension designed specifically for test engineers and QA professionals. It provides a powerful toolkit for creating, managing, and executing JavaScript scripts with advanced element inspection capabilities, AI-powered content analysis, and robust automation features for testing workflows.
 
 ### 🎯 Perfect for:
 - **Test Engineers** - Automate testing workflows and element interactions
@@ -73,7 +73,7 @@ ScriptForge Inspector is a comprehensive Firefox extension designed specifically
 > **Note**: Currently in development. Will be available on Firefox Add-ons store soon.
 
 1. Visit the [Firefox Add-ons Store](https://addons.mozilla.org/)
-2. Search for "ScriptForge Inspector"
+2. Search for "QA Tools"
 3. Click "Add to Firefox"
 4. Confirm installation when prompted
 5. The extension icon will appear in your toolbar
@@ -89,8 +89,8 @@ ScriptForge Inspector is a comprehensive Firefox extension designed specifically
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/reduanmasud/scriptforge-inspector.git
-   cd scriptforge-inspector
+   git clone https://github.com/reduanmasud/qa-tools.git
+   cd qa-tools
    ```
 
 2. **Install dependencies**
@@ -112,8 +112,8 @@ ScriptForge Inspector is a comprehensive Firefox extension designed specifically
 ### 📁 Manual Installation from Source (FOLLOW THIS FOR NOW)
 
 1. **Download the latest release**
-   - Go to [Releases](https://github.com/reduanmasud/scriptforge-inspector/releases)
-   - Download `scriptforge-inspector-x.x.x.zip`
+   - Go to [Releases](https://github.com/reduanmasud/qa-tools/releases)
+   - Download `qa-tools-x.x.x.zip`
 
 2. **Install in Firefox**
    - Open Firefox and navigate to `about:debugging`
@@ -130,7 +130,7 @@ ScriptForge Inspector is a comprehensive Firefox extension designed specifically
 
 ### 🚀 Getting Started
 
-After installation, you'll see the ScriptForge Inspector icon in your Firefox toolbar. Click it to open the sidebar interface.
+After installation, you'll see the QA Tools icon in your Firefox toolbar. Click it to open the sidebar interface.
 
 ### 📝 Scripts Tab
 
@@ -139,7 +139,7 @@ The Scripts tab is your main workspace for creating and managing JavaScript auto
 #### Creating a New Script
 
 1. **Open the Scripts Tab**
-   - Click the ScriptForge Inspector icon in your toolbar
+   - Click the QA Tools icon in your toolbar
    - The Scripts tab should be active by default
 
 2. **Create New Script**
@@ -328,7 +328,7 @@ console.log('DOM Content Loaded:', perfData.domContentLoadedEventEnd - perfData.
 #### Getting Help
 
 1. **Check Console**: Open Firefox Developer Tools (F12) for error messages
-2. **GitHub Issues**: Report bugs at [GitHub Issues](https://github.com/reduanmasud/scriptforge-inspector/issues)
+2. **GitHub Issues**: Report bugs at [GitHub Issues](https://github.com/reduanmasud/qa-tools/issues)
 3. **Documentation**: Review this manual for detailed instructions
 
 ## 🛠️ Development
@@ -369,7 +369,7 @@ npm run lint
 ## 📁 Project Structure
 
 ```
-scriptforge-inspector/
+qa-tools/
 ├── 📄 manifest.json              # Extension manifest
 ├── 🎨 icons/                     # Extension icons
 │   ├── icon-48.svg
@@ -389,7 +389,7 @@ scriptforge-inspector/
 ├── 🔨 src/                       # Source files
 │   └── markdown-renderer.js
 ├── 📦 dist/                      # Build output
-│   └── scriptforge-inspector-1.0.zip
+│   └── qa-tools-1.0.zip
 ├── 🧪 test files/                # Test and demo files
 ├── 📋 package.json               # Dependencies
 ├── 🔧 build.js                   # Build configuration
@@ -405,7 +405,7 @@ scriptforge-inspector/
 
 ### About the Author
 
-Reduan is a passionate Software Test Engineer with extensive experience in test automation and quality assurance. Working at Startise in xCloud, he specializes in creating robust testing solutions and tools that help teams deliver high-quality software. ScriptForge Inspector was born from his daily experience with testing challenges and the need for better tooling in the QA workflow.
+Reduan is a passionate Software Test Engineer with extensive experience in test automation and quality assurance. Working at Startise in xCloud, he specializes in creating robust testing solutions and tools that help teams deliver high-quality software. QA Tools was born from his daily experience with testing challenges and the need for better tooling in the QA workflow.
 Also has knowleded on Ubuntu, Bash Scriptiong & Laravel
 
 ## 🤝 Contributing
@@ -414,7 +414,7 @@ We welcome contributions from the community! Here's how you can help:
 
 ### Ways to Contribute
 
-1. **🐛 Bug Reports**: Found a bug? [Open an issue](https://github.com/reduanmasud/scriptforge-inspector/issues)
+1. **🐛 Bug Reports**: Found a bug? [Open an issue](https://github.com/reduanmasud/qa-tools/issues)
 2. **💡 Feature Requests**: Have an idea? We'd love to hear it!
 3. **📝 Documentation**: Help improve our docs
 4. **🔧 Code Contributions**: Submit pull requests
@@ -454,8 +454,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### Getting Help
 
 1. **📖 Documentation**: Start with this README and user manual
-2. **🐛 Issues**: [GitHub Issues](https://github.com/reduanmasud/scriptforge-inspector/issues) for bugs and feature requests
-3. **💬 Discussions**: [GitHub Discussions](https://github.com/reduanmasud/scriptforge-inspector/discussions) for questions and community support
+2. **🐛 Issues**: [GitHub Issues](https://github.com/reduanmasud/qa-tools/issues) for bugs and feature requests
+3. **💬 Discussions**: [GitHub Discussions](https://github.com/reduanmasud/qa-tools/discussions) for questions and community support
 4. **📧 Contact**: Reach out to the author for specific inquiries
 
 ### Reporting Issues
@@ -474,6 +474,6 @@ When reporting issues, please include:
 
 **Made with ❤️ for the testing community**
 
-[⭐ Star this project](https://github.com/reduanmasud/scriptforge-inspector) | [🐛 Report Bug](https://github.com/reduanmasud/scriptforge-inspector/issues) | [💡 Request Feature](https://github.com/reduanmasud/scriptforge-inspector/issues)
+[⭐ Star this project](https://github.com/reduanmasud/qa-tools) | [🐛 Report Bug](https://github.com/reduanmasud/qa-tools/issues) | [💡 Request Feature](https://github.com/reduanmasud/qa-tools/issues)
 
 </div>

@@ -1,6 +1,6 @@
 {
   "manifest_version": 2,
-  "name": "ScriptForge Inspector",
+  "name": "QA Tools",
   "version": "1.0",
   "description": "A powerful Firefox extension for test engineers to create, manage, and execute JavaScript scripts with advanced element inspection and AI-powered analysis",
   "icons": {
@@ -17,11 +17,11 @@
   ],
   "browser_action": {
     "default_icon": "icons/icon-48.svg",
-    "default_title": "ScriptForge Inspector"
+    "default_title": "QA Tools"
   },
   "sidebar_action": {
     "default_icon": "icons/icon-48.svg",
-    "default_title": "ScriptForge Inspector",
+    "default_title": "QA Tools",
     "default_panel": "sidebar/sidebar.html",
     "open_at_install": false
   },

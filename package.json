@@ -1,7 +1,7 @@
 {
-  "name": "scriptforge-inspector",
+  "name": "qa-tools",
   "version": "1.0.0",
-  "description": "ScriptForge Inspector - A powerful Firefox extension for test engineers to create, manage, and execute JavaScript scripts with advanced element inspection capabilities",
+  "description": "QA Tools - A powerful Firefox extension for test engineers to create, manage, and execute JavaScript scripts with advanced element inspection capabilities",
   "main": "background/background.js",
   "scripts": {
     "build": "node build.js && web-ext build --config=web-ext-config.cjs",

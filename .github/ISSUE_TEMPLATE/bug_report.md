@@ -1,6 +1,6 @@
 ---
 name: 🐛 Bug Report
-about: Create a report to help us improve ScriptForge Inspector
+about: Create a report to help us improve QA Tools
 title: '[BUG] '
 labels: ['bug', 'needs-triage']
 assignees: ['reduanmasud']

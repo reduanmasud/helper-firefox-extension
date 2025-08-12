@@ -1,6 +1,6 @@
-# 🤝 Contributing to ScriptForge Inspector
+# 🤝 Contributing to QA Tools
 
-Thank you for your interest in contributing to ScriptForge Inspector! This document provides guidelines and information for contributors.
+Thank you for your interest in contributing to QA Tools! This document provides guidelines and information for contributors.
 
 ## 📋 Table of Contents
 
@@ -39,8 +39,8 @@ This project and everyone participating in it is governed by our commitment to c
 1. **Fork the repository** on GitHub
 2. **Clone your fork** locally:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/scriptforge-inspector.git
-   cd scriptforge-inspector
+   git clone https://github.com/YOUR_USERNAME/qa-tools.git
+   cd qa-tools
    ```
 3. **Create a branch** for your contribution:
    ```bash
@@ -68,7 +68,7 @@ npm run dev
 ### Project Structure
 
 ```
-scriptforge-inspector/
+qa-tools/
 ├── 📄 manifest.json              # Extension manifest
 ├── 🖥️ sidebar/                   # Main UI components
 ├── ⚙️ background/                # Background scripts
@@ -283,11 +283,11 @@ Contributors will be recognized in:
 
 ## 📄 License
 
-By contributing to ScriptForge Inspector, you agree that your contributions will be licensed under the MIT License.
+By contributing to QA Tools, you agree that your contributions will be licensed under the MIT License.
 
 ---
 
-**Thank you for contributing to ScriptForge Inspector!** 🎉
+**Thank you for contributing to QA Tools!** 🎉
 
 Your contributions help make testing easier and more efficient for the entire QA community.
 

@@ -1,6 +1,6 @@
 ---
 name: 💡 Feature Request
-about: Suggest an idea for ScriptForge Inspector
+about: Suggest an idea for QA Tools
 title: '[FEATURE] '
 labels: ['enhancement', 'needs-triage']
 assignees: ['reduanmasud']

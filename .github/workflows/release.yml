@@ -1,4 +1,4 @@
-name: 🚀 Build and Release ScriptForge Inspector
+name: 🚀 Build and Release QA Tools
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
 
 env:
   NODE_VERSION: '18'
-  EXTENSION_NAME: 'scriptforge-inspector'
+  EXTENSION_NAME: 'qa-tools'
 
 jobs:
   # Lint and Test Job
@@ -177,17 +177,17 @@ jobs:
         VERSION="${{ needs.build.outputs.version }}"
         
         cat > release-notes.md << EOF
-        # 🚀 ScriptForge Inspector v${VERSION}
+        # 🚀 QA Tools v${VERSION}
         
         ## 📦 What's New
         
-        This release includes the latest features and improvements for ScriptForge Inspector.
+        This release includes the latest features and improvements for QA Tools.
         
         ## 🔧 Installation
         
         ### Firefox Add-ons Store (Recommended)
         - Visit the [Firefox Add-ons Store](https://addons.mozilla.org/)
-        - Search for "ScriptForge Inspector"
+        - Search for "QA Tools"
         - Click "Add to Firefox"
         
         ### Manual Installation
@@ -213,9 +213,9 @@ jobs:
         
         ## 🆘 Support
         
-        - 📖 [Documentation](https://github.com/reduanmasud/scriptforge-inspector#readme)
-        - 🐛 [Report Issues](https://github.com/reduanmasud/scriptforge-inspector/issues)
-        - 💬 [Discussions](https://github.com/reduanmasud/scriptforge-inspector/discussions)
+        - 📖 [Documentation](https://github.com/reduanmasud/qa-tools#readme)
+        - 🐛 [Report Issues](https://github.com/reduanmasud/qa-tools/issues)
+        - 💬 [Discussions](https://github.com/reduanmasud/qa-tools/discussions)
         
         ---
         
