@@ -5,7 +5,7 @@ module.exports = {
 
   // Command options:
   build: {
-    filename: 'scriptforge-inspector-{version}.zip'
+    filename: 'qa-tools-{version}.zip'
   },
   run: {
     firefox: 'firefox',

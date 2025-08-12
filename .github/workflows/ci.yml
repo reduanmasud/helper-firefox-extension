@@ -282,7 +282,7 @@ jobs:
     steps:
     - name: 📊 Generate CI Summary
       run: |
-        echo "📊 ScriptForge Inspector CI Summary"
+        echo "📊 QA Tools CI Summary"
         echo "=================================="
         echo ""
         echo "🔍 Code Quality: ${{ needs.code-quality.result }}"
@@ -299,7 +299,7 @@ jobs:
               "${{ needs.documentation-check.result }}" == "success" && 
               "${{ needs.performance-check.result }}" == "success" ]]; then
           echo "🎉 All CI checks passed successfully!"
-          echo "✅ ScriptForge Inspector is ready for deployment"
+          echo "✅ QA Tools is ready for deployment"
         else
           echo "❌ Some CI checks failed"
           echo "🔧 Please review and fix the issues above"

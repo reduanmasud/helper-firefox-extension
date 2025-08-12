@@ -1,7 +1,7 @@
-# Product Requirements Document: ScriptForge Inspector Firefox Extension
+# Product Requirements Document: QA Tools Firefox Extension
 
 ## Overview
-ScriptForge Inspector is a powerful Firefox extension designed specifically for test engineers and QA professionals. It provides a comprehensive toolkit for creating, managing, and executing JavaScript scripts with advanced element inspection capabilities, AI-powered content analysis, and robust automation features for testing workflows.
+QA Tools is a powerful Firefox extension designed specifically for test engineers and QA professionals. It provides a comprehensive toolkit for creating, managing, and executing JavaScript scripts with advanced element inspection capabilities, AI-powered content analysis, and robust automation features for testing workflows.
 
 ## Target Users
 - Test Engineers (Primary)

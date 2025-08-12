@@ -1,6 +1,6 @@
-# ScriptForge Inspector - Firefox Extension
+# QA Tools - Firefox Extension
 
-ScriptForge Inspector is a powerful Firefox extension designed for test engineers to create, manage, and execute JavaScript scripts with advanced element inspection capabilities. It provides a comprehensive toolkit for selecting DOM elements, generating XPath/Playwright locators, AI-powered content analysis, and running custom scripts on any webpage.
+QA Tools is a powerful Firefox extension designed for test engineers to create, manage, and execute JavaScript scripts with advanced element inspection capabilities. It provides a comprehensive toolkit for selecting DOM elements, generating XPath/Playwright locators, AI-powered content analysis, and running custom scripts on any webpage.
 
 ## Features
 

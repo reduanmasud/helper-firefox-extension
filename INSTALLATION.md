@@ -1,4 +1,4 @@
-# Installation Guide for ScriptForge Inspector
+# Installation Guide for QA Tools
 
 ## Development Installation
 
@@ -14,7 +14,7 @@
 
    ```bash
    git clone <repository-url>
-   cd scriptforge-inspector
+   cd qa-tools
    ```
 
 2. **Install dependencies**
@@ -65,7 +65,7 @@
 
 - Right-click on the Firefox toolbar
 - Select "Customize..."
-- Find the ScriptForge Inspector icon and drag it to your toolbar
+- Find the QA Tools icon and drag it to your toolbar
 
 ### Element selection not working
 

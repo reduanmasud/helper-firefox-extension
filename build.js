@@ -49,14 +49,14 @@ const buildCodeMirrorBundle = async () => {
 
 // Main build function
 const build = async () => {
-  console.log('🔨 Building ScriptForge Inspector bundles...');
+  console.log('🔨 Building QA Tools bundles...');
 
   await Promise.all([
     buildMarkdownBundle(),
     buildCodeMirrorBundle()
   ]);
 
-  console.log('🎉 ScriptForge Inspector bundles built successfully!');
+  console.log('🎉 QA Tools bundles built successfully!');
 };
 
 // Run build if this file is executed directly
