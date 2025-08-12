@@ -108,7 +108,7 @@ QA Tools is a comprehensive Firefox extension designed specifically for test eng
 ### 📁 Manual Installation from Source (FOLLOW THIS FOR NOW)
 
 1. **Download the latest release**
-   - Go to [Releases](https://github.com/reduanmasud/qa-tools/releases)
+   - Go to [Releases]([https://github.com/reduanmasud/qa-tools/releases](https://github.com/reduanmasud/helper-firefox-extension/releases/)
    - Download `qa-tools-x.x.x.zip`
 
 2. **Install in Firefox**
